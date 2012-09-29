@@ -28,11 +28,18 @@ Dependencies
 * [requests](http://docs.python-requests.org/en/latest/#)
 * [macauthlib](https://github.com/mozilla-services/macauthlib) for MAC authentication.  There is some homegrown MAC code that may replace this dependency in the near future.
 
-Installation via Pip:
+Installation of dependencies:
 
 ```
+# get requests using pip
 pip install requests
-pip install macauthlib
+
+# get macauthlib from GitHub (not pip; that version is old)
+git clone git://github.com/mozilla-services/macauthlib.git
+cd macauthlib
+python setup.py install
+cd ..
+rm -rf macauthlib
 ```
 
 How to use it
