@@ -12,10 +12,9 @@ What works:
 * Discovery of the tent server's API root using link headers
 * Registering an app with the server and requesting permissions using OAuth
 * Auth keys are saved to a local config file for use next time
-* API methods that don't require authentication
-* API methods that do require authentication
+* API methods (both public ones and auth-requiring ones)
 
-It should be possible to register a notification url using this code, but since it's not necessarily running a webserver it won't be able to be notified of incoming posts.  Instead, you'll have to poll for new updates.
+It should be possible to register a notification URL using this code, but since it's not necessarily running a webserver it won't be able to be notified of incoming posts.  In that case it can poll for new updates.
 
 What needs attention:
 * Some API methods have not been written yet.  Most of them should be quick to write by starting with copies of the methods that are already done.
