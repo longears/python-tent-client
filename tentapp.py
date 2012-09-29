@@ -3,6 +3,7 @@
 from __future__ import division
 import time
 import random
+import os
 import pprint
 import string
 import hashlib
@@ -12,16 +13,6 @@ import webbrowser
 import macauthlib
 from urllib import urlencode
 from colors import *
-
-
-
-# myauthtokens should be a short file that looks like this:
-#   entity = 'http://yourname.tent.is'
-#   mac_key_id = 'u:asdfasdfa'
-#   mac_key = 'asdfasdfasdfasdfasdfasdfasdf'
-
-import myauthtokens
-
 
 
 #-------------------------------------------------------------------------------------
@@ -38,27 +29,23 @@ def debugRaw(s=''): print white('>       '+s.replace('\n','\n>       '))
 def randomString():
     return ''.join([random.choice(string.letters+string.digits) for x in xrange(20)])
 
-# hook up sign_request() to be called on every request
-def authHook(req):
-    debugAuth('auth hook. mac key id: %s'%repr(myauthtokens.mac_key_id))
-    debugAuth('auth hook. mac key: %s'%repr(myauthtokens.mac_key))
-    macauthlib.sign_request(req, id=myauthtokens.mac_key_id, key=myauthtokens.mac_key, hashmod=hashlib.sha256)
-    return req
-
-# set up a global session using our auth hook
-session = requests.session(hooks={"pre_request": authHook})
-
 
 #-------------------------------------------------------------------------------------
 #--- APP
 
 class TentApp(object):
-    def __init__(self,serverDiscoveryUrl):
-        debugMain('init: %s'%serverDiscoveryUrl)
-        self.serverDiscoveryUrl = serverDiscoveryUrl
-        self.hostname = serverDiscoveryUrl.replace('https://','').split('/')[0] # HACK
-        self.apiRootUrls = []
-        self.discoverAPIUrls(self.serverDiscoveryUrl)
+    def __init__(self,serverDiscoveryUrl=None):
+        """The first time you call this, you must set serverDiscoveryUrl.
+        After that you can omit it and it will be read from the auth config file.
+        If serverDiscoveryUrl is None and there is no auth config file, an error will be raised.
+        Upon instantiation a TentApp object will perform server discovery on the serverDiscoveryUrl,
+         so you should expect a short delay during instantiation.
+        """
+        debugMain('init: serverDiscoveryUrl = %s'%serverDiscoveryUrl)
+
+        # path to the config file for saving/loading auth details.
+        # TODO: let the user pass this in to the constructor instead of hardcoding it.
+        self.configFilePath = 'auth.cfg'
 
         # details of this app
         #  basic
@@ -96,8 +83,9 @@ class TentApp(object):
         self.post_types = ['all']
 
         # auth-related things
-        #  set by us
+        #  chosen by us 
         self.state = None
+
         #  obtained from the server
         self.appID = None # the server assigns this to us during registration
 
@@ -108,13 +96,86 @@ class TentApp(object):
         self.mac_key = None
         self.mac_algorithm = None
 
-    def discoverAPIUrls(self,serverDiscoveryUrl):
+        # try to load auth details from previously saved config file
+        # this will set appID, serverDiscoveryUrl, mac_key_id, and mac_key
+        # if no config file exists, this does nothing
+        self.serverDiscoveryUrl = None
+        self._readConfigFile()
+
+        if serverDiscoveryUrl and serverDiscoveryUrl != self.serverDiscoveryUrl:
+            # user has set a specific serverDiscoveryUrl and
+            # either this is the first time through (no config file) or the serverDiscoveryUrl
+            # is different than the one in the config file, so we need to reset the auth info
+            self.serverDiscoveryUrl = serverDiscoveryUrl
+            self.appID = None
+            self.mac_key_id = None
+            self.mac_key = None
+            self.mac_algorithm = None
+
+        if serverDiscoveryUrl is None:
+            raise "serverDiscoveryUrl was not set in the constructor or the config file"
+
+        # prepare a session for doing requests
+        if self.mac_key_id and self.mac_key:
+            # if we already have keys from the config file, set up auth now
+            debugDetail('building auth session')
+            self.session = requests.session(hooks={"pre_request": self._authHook})
+        else:
+            # if we don't have auth keys, make a non-auth session.
+            # if oauthRegister is run later, this session will be replaced with a session that does authentication
+            self.session = requests.session()
+
+        # this list of api roots will be filled in by _discoverAPIurls()
+        self.apiRootUrls = []
+        self._discoverAPIUrls(self.serverDiscoveryUrl)
+
+    #------------------------------------
+    #--- misc helpers
+
+    def _authHook(self,req):
+        # hook up sign_request() to be called on every request
+        # using the current value of self.mac_key_id and self.mac_key
+        debugAuth('auth hook. mac key id: %s'%repr(self.mac_key_id))
+        debugAuth('auth hook. mac key: %s'%repr(self.mac_key))
+        macauthlib.sign_request(req, id=self.mac_key_id, key=self.mac_key, hashmod=hashlib.sha256)
+        return req
+
+    def _writeConfigFile(self):
+        debugDetail('writing config file')
+        f = open(self.configFilePath,'w')
+        f.write(pprint.pformat({
+            'entity': self.serverDiscoveryUrl,
+            'appID': self.appID,
+            'mac_key_id': self.mac_key_id,
+            'mac_key': self.mac_key,
+        })+'\n')
+        f.close()
+
+    def _readConfigFile(self):
+        if not os.path.exists(self.configFilePath):
+            debugDetail('no config file exists')
+            return
+        debugDetail('reading config file')
+        json = eval(open(self.configFilePath,'r').read())
+        self.appID = json['appID']
+        self.serverDiscoveryUrl = json['entity']
+        self.mac_key_id = json['mac_key_id']
+        self.mac_key = json['mac_key']
+        debugDetail(' config file read for %s'%self.serverDiscoveryUrl)
+        debugDetail(' appID = %s'%self.appID)
+        debugDetail(' mac_key_id = %s'%self.mac_key_id)
+        debugDetail(' mac_key = %s'%self.mac_key)
+
+    #------------------------------------
+    #--- server discovery
+
+    def _discoverAPIUrls(self,serverDiscoveryUrl):
         """set self.apiRootUrls, return None
         """
         # get self.serverDiscoveryUrl doing just a HEAD request
         # look in HTTP header for Link: foo; rel="$REL_PROFILE"
         # TODO: if not, get whole page and look for <link href="foo" rel="$REL_PROFILE" />
-        debugRequest('discovering: %s'%serverDiscoveryUrl)
+        debugRequest('head request for discovery: %s'%serverDiscoveryUrl)
         r = requests.head(url=serverDiscoveryUrl)
 
         # TODO: the requests api here only returns one link even when there are more than one in the
@@ -126,6 +187,9 @@ class TentApp(object):
             self.apiRootUrls[ii] = self.apiRootUrls[ii].replace('/profile','')
 
         debugDetail('server api urls = %s'%self.apiRootUrls)
+
+    #------------------------------------
+    #--- OAuth
 
     def _register(self):
         # get self.appID and self.mac_* from server
@@ -170,10 +234,20 @@ class TentApp(object):
         debugDetail('  mac key id: %s'%repr(self.mac_key_id))
         debugDetail('  mac algorithm: %s'%repr(self.mac_algorithm))
 
+        # set up a new session that uses MAC authentication
+        # this will be used for all future requests
+        debugDetail('building auth session')
+        self.session = requests.session(hooks={"pre_request": self._authHook})
+
     def oauthRegister(self):
+        # if we already have keys, we don't need to do anything.
+        if self.mac_key_id and self.mac_key:
+            debugMain('oauth: we already have keys!  doing nothing.')
+            return
 
         # first, register with the server to set
         #  self.appID and self.mac_*
+        # this also makes a new self.session which uses MAC authentication
         self._register()
 
         debugMain('oauth')
@@ -215,10 +289,6 @@ class TentApp(object):
         resource = '/apps/%s/authorizations'%self.appID
         jsonPayload = {'code':code, 'token_type':'mac'}
 
-        # set up the tokens so they'll be picked up by the auth hook
-        myauthtokens.mac_key_id = self.mac_key_id
-        myauthtokens.mac_key = self.mac_key
-
         # then construct and send the request
         print
         headers = {
@@ -227,7 +297,7 @@ class TentApp(object):
         }
         requestUrl = self.apiRootUrls[0] + resource
         debugRequest('posting to: %s'%requestUrl)
-        r = session.post(requestUrl, data=json.dumps(jsonPayload), headers=headers)
+        r = self.session.post(requestUrl, data=json.dumps(jsonPayload), headers=headers)
 
         # display our request
         debugDetail('request headers:')
@@ -253,13 +323,11 @@ class TentApp(object):
         debugDetail('final mac key id: %s'%self.mac_key_id)
         debugDetail('final mac key: %s'%self.mac_key)
 
-        # put them where the auth hook can see them
-        myauthtokens.mac_key_id = self.mac_key_id
-        myauthtokens.mac_key = self.mac_key
-
-        # TODO: we need to save the keys to disk
-        #  so we can use them in future requests to get actual work done
+        # save the keys to disk
+        self._writeConfigFile()
         
+    #------------------------------------
+    #--- API methods
 
     def _genericGet(self,resource):
         requestUrl = self.apiRootUrls[0] + resource
@@ -272,7 +340,6 @@ class TentApp(object):
             return
         return r.json
 
-
     def getProfile(self):
         # this can happen without auth
         debugMain('getProfile')
@@ -280,11 +347,11 @@ class TentApp(object):
 
     def putProfile(profileType,value):
         # PUT /profile/$profileType
-        pass
+        pass # TODO
     
     def follow(self,entityUrl):
         # POST /followings
-        pass
+        pass # TODO
 
     def getEntitiesIFollow(self,id=None):
         # GET /followings  [/$id]
@@ -293,7 +360,7 @@ class TentApp(object):
 
     def unfollow(self,id):
         # DELETE /followings/$id
-        pass
+        pass # TODO
 
     def getFollowers(self,id=None):
         # GET /followers  [/$id]
@@ -302,7 +369,7 @@ class TentApp(object):
 
     def removeFollower(self,id):
         # DELETE /followers/$id
-        pass
+        pass # TODO
 
     def putPost(self,post,attachments=[]):
         debugMain('putPost')
@@ -314,7 +381,7 @@ class TentApp(object):
             'Accept': 'application/vnd.tent.v0+json',
         }
         debugRequest('posting to: %s'%requestUrl)
-        r = session.post(requestUrl, data=json.dumps(post), headers=headers)
+        r = self.session.post(requestUrl, data=json.dumps(post), headers=headers)
 
         debugDetail('request headers:')
         debugJson(r.request.headers)
@@ -343,7 +410,7 @@ class TentApp(object):
 
     def getPostAttachment(self,id,filename):
         # GET /posts/$id/attachments/$filename
-        pass
+        pass # TODO
 
 
 #-------------------------------------------------------------------------------------
@@ -355,14 +422,13 @@ if __name__ == '__main__':
     # "entity" is the Tent term for the URL to your Tent server
     # For tent.is it should be "https://yourname.tent.is"
     # Instantiating this class will perform discovery on the entity URL
-    app = TentApp(myauthtokens.entity)
+    app = TentApp('https://rabbitwhiskers.tent.is')
 
     # Try to get new auth credentials
     # Currently they are not saved anywhere so we have to go through the whole
     #  oauth approval flow every time
     app.oauthRegister()
 
-    # try to post a status message using keys from myauthtokens
     post = {
         'type': 'https://tent.io/types/post/status/v0.1.0',
         'published_at': int(time.time()),
@@ -376,15 +442,15 @@ if __name__ == '__main__':
     }
     app.putPost(post)
 
-    # Read various public things that don't require auth
-    profile = app.getProfile()
-    debugJson(profile)
-    followings = app.getEntitiesIFollow()
-    debugJson(followings)
-    followers = app.getFollowers()
-    debugJson(followers)
-    posts = app.getPosts()
-    debugJson(posts)
+#     # Read various public things that don't require auth
+#     profile = app.getProfile()
+#     debugJson(profile)
+#     followings = app.getEntitiesIFollow()
+#     debugJson(followings)
+#     followers = app.getFollowers()
+#     debugJson(followers)
+#     posts = app.getPosts()
+#     debugJson(posts)
 
 
     print yellow('-----------------------------------------------------------------------/')
