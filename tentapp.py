@@ -1,24 +1,44 @@
 #!/usr/bin/env python
 
 from __future__ import division
-import os, time, random, sys, pprint
+import time
+import random
+import pprint
 import string
-import hmac, hashlib, base64
+import hashlib
 import json
 import requests
 import webbrowser
+import macauthlib
 from urllib import urlencode
 from colors import *
 
-import myauthtokens
+
+
 # myauthtokens should be a short file that looks like this:
 #   mac_key_id = 'u:asdfasdfa'
 #   mac_key = 'asdfasdfasdfasdfasdfasdfasdf'
 # You can find these values by viewing the source of your profile page on tent.is
 
+import myauthtokens
+
+
 
 #-------------------------------------------------------------------------------------
 #--- UTILS
+
+# hook up sign_request() to be called on every request
+def auth_hook(req):
+    print blue('auth hook. mac key id: %s'%repr(myauthtokens.mac_key_id))
+    print blue('auth hook. mac key: %s'%repr(myauthtokens.mac_key))
+    macauthlib.sign_request(req, id=myauthtokens.mac_key_id, key=myauthtokens.mac_key, hashmod=hashlib.sha256)
+    return req
+
+# set up a global session using our auth hook
+session = requests.session(hooks={"pre_request": auth_hook})
+
+def randomString():
+    return ''.join([random.choice(string.letters+string.digits) for x in xrange(20)])
 
 def debugMain(s=''): print yellow('%s'%s)
 def debugError(s=''): print red('ERROR: %s'%s)
@@ -26,49 +46,6 @@ def debugDetail(s=''): print cyan('    %s'%s)
 def debugJson(s=''): print magenta(pprint.pformat(s))
 def debugRequest(s=''): print green(' >> %s'%s)
 def debugRaw(s=''): print white('>       '+s.replace('\n','\n>       '))
-
-def randomString():
-    return ''.join([random.choice(string.letters+string.digits) for x in xrange(20)])
-
-def getHmacSha256AuthHeader(mac_key_id,mac_key,verb,resource,hostname,port,body=None):
-    """Return an authentication header
-    """
-    debugMain('HMAC SHA 256')
-    debugDetail('mac key id: %s'%repr(mac_key_id))
-    debugDetail('mac key: %s'%repr(mac_key))
-    timestamp = int(time.time())
-    nonce = randomString()
-
-    msgLines = []
-    msgLines.append(str(timestamp))
-    msgLines.append(nonce)
-    msgLines.append(verb)
-    msgLines.append(resource)
-    msgLines.append(hostname)
-    msgLines.append(str(port))
-    if body:
-        msgLines.append(body)
-        msg = '\n'.join(msgLines) + '\n'
-    else:
-        msg = '\n'.join(msgLines) + '\n\n'
-   
-    debugDetail('input to hash: '+repr(msg))
-    debugRaw(msg)
-
-    if type(mac_key) == unicode: mac_key = mac_key.encode('utf8')
-    if type(msg) == unicode: msg = msg.encode('utf8')
-
-    digest = hmac.new(mac_key,msg,hashlib.sha256).digest()
-    mac = base64.b64encode(digest).decode() # this produces unicode for some reason
-    mac = mac.encode('utf8') # convert from unicode to string
-    authHeader = 'MAC id="' + mac_key_id + '", '
-    authHeader += 'ts="' + str(timestamp) + '", '
-    authHeader += 'nonce="' + nonce + '", '
-    authHeader += 'mac="' + mac + '"'
-    debugDetail('auth header:')
-    debugRaw(authHeader)
-    if type(authHeader) == unicode: authHeader = authHeader.encode('utf8')
-    return authHeader
 
 
 #-------------------------------------------------------------------------------------
@@ -83,17 +60,17 @@ class TentApp(object):
         self.discoverAPIUrls(self.serverDiscoveryUrl)
 
         # details of this app
-        # basic
-        self.name = 'My Test App %s'%random.randint(11,99)
+        #  basic
+        self.name = 'python-tent-client'
         self.description = 'description of my test app'
 
-        # urls
+        #  urls
         self.url = 'http://zzzzexample.com'
         self.icon = 'http://zzzzexample.com/icon.png'
         self.oauthCallbackUrl = 'http://zzzzexample.com/oauthcallback'
         self.postNotificationUrl = 'http://zzzzexample.com/notification'
 
-        # permissions to request
+        #  permissions to request
         self.scopes = {
             'read_posts': 'x',
             'write_posts': 'x',
@@ -117,7 +94,7 @@ class TentApp(object):
         self.profile_info_types = ['all']
         self.post_types = ['all']
 
-        # auth stuff
+        # auth-related things
         #  set by us
         self.state = None
         #  obtained from the server
@@ -182,10 +159,10 @@ class TentApp(object):
             debugError('not json.  here is the actual body text:')
             debugRaw(r.text)
             return
-        self.appID = r.json['id']
-        self.mac_key_id = r.json['mac_key_id']
-        self.mac_key = r.json['mac_key']
-        self.mac_algorithm = r.json['mac_algorithm']
+        self.appID = r.json['id'].encode('utf-8')
+        self.mac_key_id = r.json['mac_key_id'].encode('utf-8')
+        self.mac_key = r.json['mac_key'].encode('utf-8')
+        self.mac_algorithm = r.json['mac_algorithm'].encode('utf-8')
         debugDetail('registered successfully.  details:')
         debugDetail('  app id: %s'%repr(self.appID))
         debugDetail('  mac key: %s'%repr(self.mac_key))
@@ -236,23 +213,20 @@ class TentApp(object):
         # first make the auth headers using the credentials from the registration step
         resource = '/apps/%s/authorizations'%self.appID
         jsonPayload = {'code':code, 'token_type':'mac'}
-        authHeader = getHmacSha256AuthHeader(mac_key_id = self.mac_key_id,
-                                                mac_key = self.mac_key,
-                                                verb = 'POST',
-                                                resource = resource,
-                                                hostname = self.hostname, # this includes the subdomain
-                                                port = 443)
+
+        # set up the tokens so they'll be picked up by the auth hook
+        myauthtokens.mac_key_id = self.mac_key_id
+        myauthtokens.mac_key = self.mac_key
 
         # then construct and send the request
         print
         headers = {
             'Content-Type': 'application/vnd.tent.v0+json',
             'Accept': 'application/vnd.tent.v0+json',
-            'Authorization': authHeader,
         }
         requestUrl = self.apiRootUrls[0] + resource
         debugRequest('posting to: %s'%requestUrl)
-        r = requests.post(requestUrl, data=json.dumps(jsonPayload), headers=headers)
+        r = session.post(requestUrl, data=json.dumps(jsonPayload), headers=headers)
 
         # display our request
         debugDetail('request headers:')
@@ -271,10 +245,16 @@ class TentApp(object):
             debugError('auth failed.')
             return
         debugJson(r.json)
-        self.access_token = r.json['access_token']
-        self.secret = r.json['mac_key']
+
+        # now we have keys!
+        self.access_token = r.json['access_token'].encode('utf-8')
+        self.secret = r.json['mac_key'].encode('utf-8')
         debugDetail('access token: %s'%self.access_token)
         debugDetail('secret: %s'%self.secret)
+
+        # put them where the auth hook can see them
+        myauthtokens.mac_key_id = self.access_token
+        myauthtokens.mac_key = self.secret
 
         # TODO: now we need to save the access token and secret to disk
         #  so we can use them in future requests to get actual work done
@@ -325,38 +305,32 @@ class TentApp(object):
 
     def putPost(self,post,attachments=[]):
         debugMain('putPost')
+
         resource = '/posts'
         requestUrl = self.apiRootUrls[0] + resource
-        authHeader = getHmacSha256AuthHeader(mac_key_id = myauthtokens.mac_key_id, # HACK: use key from Tent Status app
-                                                mac_key = myauthtokens.mac_key,
-                                                verb = 'POST',
-                                                resource = resource,
-                                                hostname = self.hostname,
-                                                port = 443)
-        print
         headers = {
             'Content-Type': 'application/vnd.tent.v0+json',
             'Accept': 'application/vnd.tent.v0+json',
-            'Authorization': authHeader,
         }
         debugRequest('posting to: %s'%requestUrl)
-        r = requests.post(requestUrl, data=json.dumps(post), headers=headers)
+        r = session.post(requestUrl, data=json.dumps(post), headers=headers)
+
+        debugDetail('request headers:')
+        debugJson(r.request.headers)
+        print
+        debugDetail('request data:')
+        debugRaw(r.request.data)
+        print
+        print yellow('  --  --  --  --  --')
+        print
+        debugDetail('response headers:')
+        debugJson(r.headers)
+        print
+        debugDetail('response body:')
+        debugRaw(r.text)
+        print
 
         if r.json is None:
-            debugDetail('request headers:')
-            debugJson(r.request.headers)
-            print
-            debugDetail('request data:')
-            debugRaw(r.request.data)
-            print
-            print yellow('  --  --  --  --  --')
-            print
-            debugDetail('response headers:')
-            debugJson(r.headers)
-            print
-            debugDetail('response body:')
-            debugRaw(r.text)
-            print
             debugError('failed to put post.')
             print
         return r.json
@@ -382,6 +356,11 @@ if __name__ == '__main__':
 
     app = TentApp(url) # this will also perform discovery on the url
 
+    # Try to get new auth credentials
+    # Currently they are not saved anywhere so we have to go through the whole
+    #  oauth approval flow every time
+    app.oauth_register()
+
     # try to post a status message using keys from myauthtokens
     post = {
         'type': 'https://tent.io/types/post/status/v0.1.0',
@@ -391,7 +370,7 @@ if __name__ == '__main__':
         },
         'licenses': ['http://creativecommons.org/licenses/by/3.0/'],
         'content': {
-            'text': 'Hello from Python!',
+            'text': 'This was posted using python-tent-client.  https://github.com/longears/python-tent-client',
         }
     }
     app.putPost(post)
@@ -406,8 +385,6 @@ if __name__ == '__main__':
 #     posts = app.getPosts()
 #     debugJson(posts)
 
-#     # Try to get new auth credentials
-#     app.oauth_register()
 
     print yellow('-----------------------------------------------------------------------/')
 
