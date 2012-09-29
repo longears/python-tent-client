@@ -9,6 +9,9 @@ def debugJson(s=''): print magenta(pprint.pformat(s))
 
 print yellow('-----------------------------------------------------------------------\\')
 
+# turn on debug output from tentapp
+tentapp.debug = True
+
 
 # "entity" is the Tent term for the URL to your Tent server.
 # For tent.is it should be "https://yourname.tent.is"
@@ -48,7 +51,7 @@ post = {
         'text': 'This was posted using python-tent-client.  https://github.com/longears/python-tent-client',
     }
 }
-app.putPost(post)
+# app.putPost(post)
 
 print yellow('-----------------------------------------------------------------------/')
 

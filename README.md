@@ -20,7 +20,6 @@ What needs attention:
 * Find elegant ways to deal with the JSON we get back from the Tent server.  Maybe add some classes representing posts, profiles, etc.
 * Write tests
 * Error handling
-* Remove obnoxiously colorful debug output
 
 It should be possible to register a notification url using this code, but since it's not necessarily running a webserver it won't be able to be notified of incoming posts.  Instead, you'll have to poll for new updates.
 

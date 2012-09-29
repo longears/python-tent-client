@@ -18,13 +18,23 @@ from colors import *
 #-------------------------------------------------------------------------------------
 #--- UTILS
 
-def debugAuth(s=''): print blue('%s'%s)
-def debugMain(s=''): print yellow('%s'%s)
-def debugError(s=''): print red('ERROR: %s'%s)
-def debugDetail(s=''): print cyan('    %s'%s)
-def debugJson(s=''): print magenta(pprint.pformat(s))
-def debugRequest(s=''): print green(' >> %s'%s)
-def debugRaw(s=''): print white('>       '+s.replace('\n','\n>       '))
+# Set this to True to get a ton of debugging info printed to the screen
+debug = False
+
+def debugAuth(s=''):
+    if debug: print blue('%s'%s)
+def debugMain(s=''):
+    if debug: print yellow('%s'%s)
+def debugError(s=''):
+    if debug: print red('ERROR: %s'%s)
+def debugDetail(s=''):
+    if debug: print cyan('    %s'%s)
+def debugJson(s=''):
+    if debug: print magenta(pprint.pformat(s))
+def debugRequest(s=''):
+    if debug: print green(' >> %s'%s)
+def debugRaw(s=''):
+    if debug: print white('>       '+s.replace('\n','\n>       '))
 
 def randomString():
     return ''.join([random.choice(string.letters+string.digits) for x in xrange(20)])
