@@ -3,25 +3,26 @@ python-tent-client
 
 A command-line client for talking to [Tent](http://tent.io/) servers such as [tent.is](https://tent.is/).
 
-Current status
+Current Status
 --------------
 
-Things are rapidly changing.
+We're in the "move fast and break things" phase right now.
 
 What works:
 * Discovery of the tent server's API root using link headers
 * Registering an app with the server and requesting permissions using OAuth
+* Auth keys are saved to a local config file for use next time
 * API methods that don't require authentication
 * API methods that do require authentication
-* Auth keys are saved to a local config file
+
+It should be possible to register a notification url using this code, but since it's not necessarily running a webserver it won't be able to be notified of incoming posts.  Instead, you'll have to poll for new updates.
 
 What needs attention:
 * Some API methods which require authentication have not been written yet
-* Find elegant ways to deal with the JSON we get back from the Tent server.  Maybe add some classes representing posts, profiles, etc.
 * Write tests
-* Error handling
-
-It should be possible to register a notification url using this code, but since it's not necessarily running a webserver it won't be able to be notified of incoming posts.  Instead, you'll have to poll for new updates.
+* Error handling.  Should add a few exception types and also pay closer attention to errors from the `requests` module.
+* Find elegant ways to deal with the JSON we get back from the Tent server.  Maybe add some classes representing posts, profiles, etc.
+* Documentation
 
 Dependencies
 ------------
