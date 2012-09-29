@@ -413,49 +413,6 @@ class TentApp(object):
         pass # TODO
 
 
-#-------------------------------------------------------------------------------------
-#--- MAIN
-
-if __name__ == '__main__':
-    print yellow('-----------------------------------------------------------------------\\')
-
-    # "entity" is the Tent term for the URL to your Tent server
-    # For tent.is it should be "https://yourname.tent.is"
-    # Instantiating this class will perform discovery on the entity URL
-    app = TentApp('https://rabbitwhiskers.tent.is')
-
-    # Try to get new auth credentials
-    # Currently they are not saved anywhere so we have to go through the whole
-    #  oauth approval flow every time
-    app.oauthRegister()
-
-    post = {
-        'type': 'https://tent.io/types/post/status/v0.1.0',
-        'published_at': int(time.time()),
-        'permissions': {
-            'public': True,
-        },
-        'licenses': ['http://creativecommons.org/licenses/by/3.0/'],
-        'content': {
-            'text': 'This was posted using python-tent-client.  https://github.com/longears/python-tent-client',
-        }
-    }
-    app.putPost(post)
-
-#     # Read various public things that don't require auth
-#     profile = app.getProfile()
-#     debugJson(profile)
-#     followings = app.getEntitiesIFollow()
-#     debugJson(followings)
-#     followers = app.getFollowers()
-#     debugJson(followers)
-#     posts = app.getPosts()
-#     debugJson(posts)
-
-
-    print yellow('-----------------------------------------------------------------------/')
-
-
 
 
 
