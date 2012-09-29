@@ -63,11 +63,13 @@ tentapp.debug = True  # Turn this on if you want to see verbose debugging info w
 
 app = tentapp.TentApp("https://yourname.tent.is")
 
-app.oauthRegister()  # Send the user to a browser asking them to approve the app.
-                     # Tokens will be saved to "auth.cfg" and reused next time.
-
 # Get your profile info as a JSON-style Python dictionary
 print app.getProfile()
+
+app.oauthRegister()  # Send the user to a browser asking them to approve the app.
+                     # Tokens will be saved to "auth.cfg" and reused next time.
+                     # You can skip this if you just want to read public
+                     # posts and profiles.
 
 # Post a new post.  For now you need to supply the JSON dictionary yourself.
 app.putPost(yourPostJsonHere)
