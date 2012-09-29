@@ -1,5 +1,5 @@
 
-username = 'rabbitwhiskers'
+entity = 'https://rabbitwhiskers.tent.is'
 
 # leave these alone for now
 mac_key_id = 'u:asdfasdf'

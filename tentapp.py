@@ -16,7 +16,7 @@ from colors import *
 
 
 # myauthtokens should be a short file that looks like this:
-#   username = 'your_username'
+#   entity = 'http://yourname.tent.is'
 #   mac_key_id = 'u:asdfasdfa'
 #   mac_key = 'asdfasdfasdfasdfasdfasdfasdf'
 
@@ -352,10 +352,10 @@ class TentApp(object):
 if __name__ == '__main__':
     print yellow('-----------------------------------------------------------------------\\')
 
-    username = myauthtokens.username
-    url = 'https://%s.tent.is'%username
-
-    app = TentApp(url) # this will also perform discovery on the url
+    # "entity" is the Tent term for the URL to your Tent server
+    # For tent.is it should be "https://yourname.tent.is"
+    # Instantiating this class will perform discovery on the entity URL
+    app = TentApp(myauthtokens.entity)
 
     # Try to get new auth credentials
     # Currently they are not saved anywhere so we have to go through the whole
@@ -376,15 +376,15 @@ if __name__ == '__main__':
     }
     app.putPost(post)
 
-#     # Read various public things that don't require auth
-#     profile = app.getProfile()
-#     debugJson(profile)
-#     followings = app.getEntitiesIFollow()
-#     debugJson(followings)
-#     followers = app.getFollowers()
-#     debugJson(followers)
-#     posts = app.getPosts()
-#     debugJson(posts)
+    # Read various public things that don't require auth
+    profile = app.getProfile()
+    debugJson(profile)
+    followings = app.getEntitiesIFollow()
+    debugJson(followings)
+    followers = app.getFollowers()
+    debugJson(followers)
+    posts = app.getPosts()
+    debugJson(posts)
 
 
     print yellow('-----------------------------------------------------------------------/')
