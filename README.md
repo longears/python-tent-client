@@ -30,7 +30,7 @@ Dependencies
 How to use it
 -------------
 
-Set your username in `myauthtokens.py`.  You can leave the rest of that file alone for now.  Eventually we will be saving auto tokens there as they're generated.
+Set your username in `myauthtokens.py`.  You can leave the rest of that file alone for now.  Eventually we will be saving auth tokens there as they're generated.
 
 For a quick start, run `tentapp.py` and it will launch your browser, ask you to approve it, and then post a hello world message.  The oauth process is awkward when run from a command line, so read the prompt when it asks you to copy and paste things from your browser.
 
