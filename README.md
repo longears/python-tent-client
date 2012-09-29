@@ -12,7 +12,7 @@ Working:
 * Registering an app up to the point where you need to start using MAC signatures, which is at the very end of that process
 
 Not working:
-* Authentication.  Something is wrong with the MAC signature, but I'm not sure what.
+* Authentication.  Something is wrong with the MAC signature, but I'm not sure what.  More details in this issue report: longears/python-tent-client#1
 
 How to use it
 -------------
