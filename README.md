@@ -16,6 +16,8 @@ Not written yet:
 * Persisting auth tokens after obtaining them
 * Some API methods which require authentication
 * Helper functions for dealing with the JSON we get back from the Tent server
+* Tests
+* Error handling
 
 Dependencies
 ------------
