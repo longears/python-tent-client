@@ -8,4 +8,5 @@ local/*
 *.swp
 .DS_Store
 
+auth.cfg
 

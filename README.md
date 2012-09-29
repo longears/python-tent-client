@@ -13,9 +13,9 @@ What works:
 * Registering an app with the server and requesting permissions using OAuth
 * API methods that don't require authentication
 * API methods that do require authentication
+* Auth keys are saved to a local config file
 
 What needs attention:
-* Persist auth tokens locally after obtaining them
 * Some API methods which require authentication have not been written yet
 * Find elegant ways to deal with the JSON we get back from the Tent server.  Maybe add some classes representing posts, profiles, etc.
 * Write tests
@@ -47,25 +47,22 @@ cd ..
 rm -rf macauthlib
 ```
 
-How to use it
--------------
+Quick Start
+-----------
 
-Set your username in `myauthtokens.py`.  You can leave the rest of that file alone for now.  Eventually we will be saving auth tokens there as they're generated.
+Look at the end of `tentapp.py`.  Find `rabbitwhiskers.tent.is` and replace it with your Tent entity URL.
 
-For a quick start, run `tentapp.py` and it will launch your browser, have the tent server ask you to approve the app, and then post a hello world message.  The OAuth process is awkward when run from a command line, so read the prompt when it asks you to copy and paste things from your browser.
+Run `tentapp.py` and it will launch your browser, have the Tent server ask you to approve the app, and then post a hello world message.  The OAuth process is awkward when run from a command line, so read the prompt when it asks you to copy and paste things from your browser.  You only have to do this once; after that your auth details are saved in 'auth.cfg' and reused in future runs.
 
-There are some examples at the end of `tentapp.py`.  Here's a quick overview:
+There are some other examples at the end of `tentapp.py`.  Here's a quick overview:
 
 ```
 import tentapp
-import myauthtokens
 
-app = tentapp.TentApp(myauthtokens.entity)  # entity is "https://yourname.tent.is"
+app = tentapp.TentApp("https://yourname.tent.is")
 
-app.oauthRegister()  # Send the user to a browser asking them to approve the app
-                     # We should, but currently do not, save the resulting auth keys 
-                     # for future sessions, so each time this runs it will register as
-                     # a new app.
+app.oauthRegister()  # Send the user to a browser asking them to approve the app.
+                     # Tokens will be saved to "auth.cfg" and reused next time.
 
 # Get your profile info as a JSON-style Python dictionary
 print app.getProfile()
