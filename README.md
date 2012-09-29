@@ -18,11 +18,11 @@ What works:
 It should be possible to register a notification url using this code, but since it's not necessarily running a webserver it won't be able to be notified of incoming posts.  Instead, you'll have to poll for new updates.
 
 What needs attention:
-* Some API methods which require authentication have not been written yet
+* Some API methods have not been written yet.  Most of them should be quick to write by starting with copies of the methods that are already done.
 * Write tests
 * Error handling.  Should add a few exception types and also pay closer attention to errors from the `requests` module.
-* Find elegant ways to deal with the JSON we get back from the Tent server.  Maybe add some classes representing posts, profiles, etc.
 * Documentation
+* Find elegant ways to deal with the JSON we get back from the Tent server.  Maybe add some classes representing posts, profiles, etc.
 
 Dependencies
 ------------
