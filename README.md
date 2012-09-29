@@ -34,17 +34,25 @@ Set your username in `myauthtokens.py`.  You can leave the rest of that file alo
 
 For a quick start, run `tentapp.py` and it will launch your browser, ask you to approve it, and then post a hello world message.  The oauth process is awkward when run from a command line, so read the prompt when it asks you to copy and paste things from your browser.
 
+There are some examples at the end of `tentapp.py`.  Here's a quick overview:
+
 ```
     import tentapp
     import myauthtokens
+
     app = tentapp.TentApp('http://%s.tent.is'%myauthtokens.username)
     app.oauth_register()    # Send the user to a browser asking them to approve the app
                             # We should, but currently do not, save the resulting auth keys 
                             # for future sessions, so each time this runs it will register as
                             # a new app.
+
+    # Get your profile info as a JSON-style Python dictionary
     print app.getProfile()
+
+    # Post a new post.  For now you need to supply the JSON dictionary yourself.
     app.putPost(yourPostJsonHere)
 ```
 
-There are more examples at the end of `tentapp.py`.
+You'll need to work directly with the JSON types described here: http://tent.io/docs/app-server
+
 
