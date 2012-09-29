@@ -58,6 +58,9 @@ There are some other examples at the end of `tentapp.py`.  Here's a quick overvi
 ```
 import tentapp
 
+tentapp.debug = True  # Turn this on if you want to see verbose debugging info while
+                      # the app is running.  Defaults to False.
+
 app = tentapp.TentApp("https://yourname.tent.is")
 
 app.oauthRegister()  # Send the user to a browser asking them to approve the app.
