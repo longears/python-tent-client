@@ -8,6 +8,4 @@ local/*
 *.swp
 .DS_Store
 
-myauthtokens.py
-myauthtokens.pyc
 

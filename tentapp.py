@@ -16,9 +16,9 @@ from colors import *
 
 
 # myauthtokens should be a short file that looks like this:
+#   username = 'your-username'
 #   mac_key_id = 'u:asdfasdfa'
 #   mac_key = 'asdfasdfasdfasdfasdfasdfasdf'
-# You can find these values by viewing the source of your profile page on tent.is
 
 import myauthtokens
 
