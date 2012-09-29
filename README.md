@@ -1,23 +1,25 @@
 python-tent-client
 ==================
 
-A command-line client for talking to [Tent](http://tent.io/) servers such as [tent.is](https://tent.is/)
+A command-line client for talking to [Tent](http://tent.io/) servers such as [tent.is](https://tent.is/).
 
 Current status
 --------------
 
-Working:
+What works:
 * Discovery of the tent server's API root using link headers
 * API methods that don't require authentication
-* Registering an app up to the point where you need to start using MAC signatures, which is at the very end of that process
+* Registering an app
 * Authentication
+* Getting public posts; getting followers; posting statuses
 
-Not written yet:
-* Persisting auth tokens after obtaining them
-* Some API methods which require authentication
-* Helper functions for dealing with the JSON we get back from the Tent server
-* Tests
+What needs attention:
+* Persist auth tokens locally after obtaining them
+* Some API methods which require authentication have not been written yet
+* Find elegant ways to deal with the JSON we get back from the Tent server.  Maybe add some classes representing posts, profiles, etc.
+* Write tests
 * Error handling
+* Remove obnoxiously colorful debug output
 
 Dependencies
 ------------
@@ -28,10 +30,7 @@ Dependencies
 How to use it
 -------------
 
-* Rename `myauthtokens.py.example` to `myauthtokens.py`.  In that file,
- * Set your username
- * Until we get the auth working, grab some auth tokens by viewing the source of your profile page on [tent.is](https://tent.is/).  Find the `mac_key` and `mac_key_id` and paste them into `myauthtokens.py`.  These are the tokens for tent.is's built-in "Tent Status" app.  Thanks to [elimisteve/clint](https://github.com/elimisteve/clint) for this trick.
-* Use it like so.  There are more examples at the end of `tentapp.py`.
+Rename `myauthtokens.py.example` to `myauthtokens.py`.  In that file, set your username.  You can leave the rest alone for now.  Eventually we will be saving auto tokens there as they're generated.
 
 ```
     import tentapp
@@ -44,4 +43,6 @@ How to use it
     print app.getProfile()
     app.putPost(yourPostJsonHere)
 ```
+
+There are more examples at the end of `tentapp.py`.
 
