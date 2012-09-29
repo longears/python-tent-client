@@ -6,6 +6,8 @@ A command-line client for talking to [Tent](http://tent.io/) servers such as [te
 Current status
 --------------
 
+Things are rapidly changing.
+
 What works:
 * Discovery of the tent server's API root using link headers
 * Registering an app with the server and requesting permissions using OAuth
