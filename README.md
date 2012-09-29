@@ -54,21 +54,21 @@ For a quick start, run `tentapp.py` and it will launch your browser, have the te
 There are some examples at the end of `tentapp.py`.  Here's a quick overview:
 
 ```
-    import tentapp
-    import myauthtokens
+import tentapp
+import myauthtokens
 
-    app = tentapp.TentApp('http://%s.tent.is'%myauthtokens.username)
+app = tentapp.TentApp(myauthtokens.entity)  # entity is "https://yourname.tent.is"
 
-    app.oauthRegister()  # Send the user to a browser asking them to approve the app
-                         # We should, but currently do not, save the resulting auth keys 
-                         # for future sessions, so each time this runs it will register as
-                         # a new app.
+app.oauthRegister()  # Send the user to a browser asking them to approve the app
+                     # We should, but currently do not, save the resulting auth keys 
+                     # for future sessions, so each time this runs it will register as
+                     # a new app.
 
-    # Get your profile info as a JSON-style Python dictionary
-    print app.getProfile()
+# Get your profile info as a JSON-style Python dictionary
+print app.getProfile()
 
-    # Post a new post.  For now you need to supply the JSON dictionary yourself.
-    app.putPost(yourPostJsonHere)
+# Post a new post.  For now you need to supply the JSON dictionary yourself.
+app.putPost(yourPostJsonHere)
 ```
 
 You'll need to work directly with the JSON types described here: http://tent.io/docs/app-server
