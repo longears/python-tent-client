@@ -33,9 +33,7 @@ posts = app.getPosts()
 debugJson(posts)
 
 
-# Try to get new auth credentials
-# Currently they are not saved anywhere so we have to go through the whole
-#  oauth approval flow every time
+# Check for Oauth saved credentials. Otherwise register for new auth credentials
 app.oauthRegister()
 
 
@@ -51,7 +49,7 @@ post = {
         'text': 'This was posted using python-tent-client.  https://github.com/longears/python-tent-client',
     }
 }
-# app.putPost(post)
+app.putPost(post)
 
 print yellow('-----------------------------------------------------------------------/')
 
