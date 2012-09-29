@@ -1,7 +1,7 @@
 python-tent-client
 ==================
 
-A quick command-line client for talking to Tent servers.
+A command-line client for talking to [Tent](http://tent.io/) servers such as [tent.is](https://tent.is/)
 
 Current status
 --------------
@@ -14,11 +14,22 @@ Working:
 Not working:
 * Authentication.  Something is wrong with the MAC signature, but I'm not sure what.  More details in [this issue report.](https://github.com/longears/python-tent-client/issues/1)
 
+Not written yet:
+* Persisting auth tokens after obtaining them
+* Some API methods which require authentication
+* Helper functions for dealing with the JSON we get back from the Tent server
+
+Dependencies
+------------
+
+* [requests](http://docs.python-requests.org/en/latest/#)
+
 How to use it
 -------------
 
-* Rename `myauthtokens.py.example` to `myauthtokens.py`
-* Until we get the auth working, grab some auth tokens by viewing the source of your profile page on [tent.is](https://tent.is/).  Find the `mac_key` and `mac_key_id` and paste them into `myauthtokens.py`.  These are the tokens for tent.is's built-in "Tent Status" app.  Thanks to [elimisteve/clint](https://github.com/elimisteve/clint) for this trick.
+* Rename `myauthtokens.py.example` to `myauthtokens.py`.  In that file,
+ * Set your username
+ * Until we get the auth working, grab some auth tokens by viewing the source of your profile page on [tent.is](https://tent.is/).  Find the `mac_key` and `mac_key_id` and paste them into `myauthtokens.py`.  These are the tokens for tent.is's built-in "Tent Status" app.  Thanks to [elimisteve/clint](https://github.com/elimisteve/clint) for this trick.
 * Use it like so.  There are more examples at the end of `tentapp.py`.
 
 ```
