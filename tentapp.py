@@ -143,7 +143,7 @@ class TentApp(object):
     def _writeConfigFile(self):
         debugDetail('writing config file')
         f = open(self.configFilePath,'w')
-        f.write(pprint.pformat({
+        f.write(json.dumps({
             'entity': self.serverDiscoveryUrl,
             'appID': self.appID,
             'mac_key_id': self.mac_key_id,
@@ -156,11 +156,11 @@ class TentApp(object):
             debugDetail('no config file exists')
             return
         debugDetail('reading config file')
-        json = eval(open(self.configFilePath,'r').read())
-        self.appID = json['appID']
-        self.serverDiscoveryUrl = json['entity']
-        self.mac_key_id = json['mac_key_id']
-        self.mac_key = json['mac_key']
+        jsonObject = json.loads(open(self.configFilePath,'r').read())
+        self.appID = jsonObject['appID'].encode('utf-8')
+        self.serverDiscoveryUrl = jsonObject['entity'].encode('utf-8')
+        self.mac_key_id = jsonObject['mac_key_id'].encode('utf-8')
+        self.mac_key = jsonObject['mac_key'].encode('utf-8')
         debugDetail(' config file read for %s'%self.serverDiscoveryUrl)
         debugDetail(' appID = %s'%self.appID)
         debugDetail(' mac_key_id = %s'%self.mac_key_id)
