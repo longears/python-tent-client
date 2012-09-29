@@ -22,6 +22,7 @@ What needs attention:
 * Error handling.  Should add a few exception types and also pay closer attention to errors from the `requests` module.
 * Documentation
 * Find elegant ways to deal with the JSON we get back from the Tent server.  Maybe add some classes representing posts, profiles, etc.
+* Package this up as a real Python module that can be installed in the usual way
 
 Dependencies
 ------------
