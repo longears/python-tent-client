@@ -16,7 +16,7 @@ from colors import *
 
 
 # myauthtokens should be a short file that looks like this:
-#   username = 'your-username'
+#   username = 'your_username'
 #   mac_key_id = 'u:asdfasdfa'
 #   mac_key = 'asdfasdfasdfasdfasdfasdfasdf'
 
@@ -27,25 +27,26 @@ import myauthtokens
 #-------------------------------------------------------------------------------------
 #--- UTILS
 
-# hook up sign_request() to be called on every request
-def auth_hook(req):
-    print blue('auth hook. mac key id: %s'%repr(myauthtokens.mac_key_id))
-    print blue('auth hook. mac key: %s'%repr(myauthtokens.mac_key))
-    macauthlib.sign_request(req, id=myauthtokens.mac_key_id, key=myauthtokens.mac_key, hashmod=hashlib.sha256)
-    return req
-
-# set up a global session using our auth hook
-session = requests.session(hooks={"pre_request": auth_hook})
-
-def randomString():
-    return ''.join([random.choice(string.letters+string.digits) for x in xrange(20)])
-
+def debugAuth(s=''): print blue('%s'%s)
 def debugMain(s=''): print yellow('%s'%s)
 def debugError(s=''): print red('ERROR: %s'%s)
 def debugDetail(s=''): print cyan('    %s'%s)
 def debugJson(s=''): print magenta(pprint.pformat(s))
 def debugRequest(s=''): print green(' >> %s'%s)
 def debugRaw(s=''): print white('>       '+s.replace('\n','\n>       '))
+
+def randomString():
+    return ''.join([random.choice(string.letters+string.digits) for x in xrange(20)])
+
+# hook up sign_request() to be called on every request
+def authHook(req):
+    debugAuth('auth hook. mac key id: %s'%repr(myauthtokens.mac_key_id))
+    debugAuth('auth hook. mac key: %s'%repr(myauthtokens.mac_key))
+    macauthlib.sign_request(req, id=myauthtokens.mac_key_id, key=myauthtokens.mac_key, hashmod=hashlib.sha256)
+    return req
+
+# set up a global session using our auth hook
+session = requests.session(hooks={"pre_request": authHook})
 
 
 #-------------------------------------------------------------------------------------
@@ -98,14 +99,14 @@ class TentApp(object):
         #  set by us
         self.state = None
         #  obtained from the server
-        self.appID = None          # keep this.  these four come during registration
+        self.appID = None # the server assigns this to us during registration
 
-        self.mac_key_id = None     # temporary.  used during registration oauth flow
-        self.mac_key = None        #          
-        self.mac_algorithm = None  #
-
-        self.secret = None         # keep this.  a mac_key    that comes at the end of the oauth flow
-        self.access_token = None   # keep this.  a mac_key_id that comes at the end of the oauth flow
+        #  keys
+        #   At first these are set to temp values during the registration & oauth approval process.
+        #   When that completes, they are replaced with our permanent keys.
+        self.mac_key_id = None
+        self.mac_key = None
+        self.mac_algorithm = None
 
     def discoverAPIUrls(self,serverDiscoveryUrl):
         """set self.apiRootUrls, return None
@@ -169,7 +170,7 @@ class TentApp(object):
         debugDetail('  mac key id: %s'%repr(self.mac_key_id))
         debugDetail('  mac algorithm: %s'%repr(self.mac_algorithm))
 
-    def oauth_register(self):
+    def oauthRegister(self):
 
         # first, register with the server to set
         #  self.appID and self.mac_*
@@ -209,7 +210,7 @@ class TentApp(object):
         print
         print '---------------------------------------------------------/'
 
-        # trade the code for a permanent secret
+        # trade the code for a permanent key
         # first make the auth headers using the credentials from the registration step
         resource = '/apps/%s/authorizations'%self.appID
         jsonPayload = {'code':code, 'token_type':'mac'}
@@ -246,17 +247,17 @@ class TentApp(object):
             return
         debugJson(r.json)
 
-        # now we have keys!
-        self.access_token = r.json['access_token'].encode('utf-8')
-        self.secret = r.json['mac_key'].encode('utf-8')
-        debugDetail('access token: %s'%self.access_token)
-        debugDetail('secret: %s'%self.secret)
+        # now we have permanent keys
+        self.mac_key_id = r.json['access_token'].encode('utf-8')
+        self.mac_key = r.json['mac_key'].encode('utf-8')
+        debugDetail('final mac key id: %s'%self.mac_key_id)
+        debugDetail('final mac key: %s'%self.mac_key)
 
         # put them where the auth hook can see them
-        myauthtokens.mac_key_id = self.access_token
-        myauthtokens.mac_key = self.secret
+        myauthtokens.mac_key_id = self.mac_key_id
+        myauthtokens.mac_key = self.mac_key
 
-        # TODO: now we need to save the access token and secret to disk
+        # TODO: we need to save the keys to disk
         #  so we can use them in future requests to get actual work done
         
 
@@ -359,7 +360,7 @@ if __name__ == '__main__':
     # Try to get new auth credentials
     # Currently they are not saved anywhere so we have to go through the whole
     #  oauth approval flow every time
-    app.oauth_register()
+    app.oauthRegister()
 
     # try to post a status message using keys from myauthtokens
     post = {
