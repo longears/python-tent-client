@@ -1,4 +1,7 @@
 
-mac_key_id = "u:asdfasdf"
-mac_key = "asdfasdfasdfadsfasdfasdfadsfadsf"
+# You can find these values by viewing the source of your profile page on tent.is
+
+mac_key_id = 'u:asdfasdf'
+mac_key = 'asdfasdfasdfadsfasdfasdfadsfadsf'
+username = 'rabbitwhiskers'
 

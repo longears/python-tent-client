@@ -377,7 +377,7 @@ class TentApp(object):
 if __name__ == '__main__':
     print yellow('-----------------------------------------------------------------------\\')
 
-    username = 'rabbitwhiskers'
+    username = myauthtokens.username
     url = 'https://%s.tent.is'%username
 
     app = TentApp(url) # this will also perform discovery on the url
