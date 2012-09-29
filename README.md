@@ -36,6 +36,9 @@ Installation of dependencies:
 # get requests using pip
 pip install requests
 
+# you might already have an old version of requests that's missing the link headers feature.  If so:
+pip install --update requests
+
 # get macauthlib from GitHub (not pip; that version is old)
 git clone git://github.com/mozilla-services/macauthlib.git
 cd macauthlib
