@@ -18,7 +18,7 @@ app.oauthRegister()
 
 # Because we've authenticated, getPosts() will get not only our own public posts
 # but also those of people we follow and posts that mention us.
-# tent.is limits this to the last 50 posts or so.
+# tent.is limits this to the last 50 posts or so unless additional parameters are present
 posts = app.getPosts()
 
 # sort oldest first

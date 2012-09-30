@@ -414,6 +414,10 @@ class TentApp(object):
         return r.json
 
     def getPosts(self,id=None):
+        """With no auth, fetch your own public posts.
+        With auth, fetch all your posts plus incoming posts from followings and people mentioning you.
+        tent.is limits this to the last 50 posts or so unless additional parameters are present.
+        """
         # GET /posts  [/$id]
         debugMain('getPosts')
         return self._genericGet('/posts')
