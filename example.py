@@ -9,8 +9,9 @@ def debugJson(s=''): print magenta(pprint.pformat(s))
 
 print yellow('-----------------------------------------------------------------------\\')
 
-# turn on debug output from tentapp
-tentapp.debug = True
+
+# Turn on or off the verbose debug output from tentapp
+tentapp.debug = False
 
 
 # "entity" is the Tent term for the URL to your Tent server.
@@ -19,7 +20,12 @@ tentapp.debug = True
 app = tentapp.TentApp('https://rabbitwhiskers.tent.is')
 
 
+# # Check for Oauth saved credentials. Otherwise register for new auth credentials
+app.oauthRegister()
+
+
 # Read various public things that don't require auth
+# Note that when auth is present, these may return additional results
 profile = app.getProfile()
 debugJson(profile)
 
@@ -28,13 +34,6 @@ debugJson(followings)
 
 followers = app.getFollowers()
 debugJson(followers)
-
-posts = app.getPosts()
-debugJson(posts)
-
-
-# Check for Oauth saved credentials. Otherwise register for new auth credentials
-app.oauthRegister()
 
 
 # Post a new status message
@@ -50,6 +49,7 @@ post = {
     }
 }
 app.putPost(post)
+
 
 print yellow('-----------------------------------------------------------------------/')
 
