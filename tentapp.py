@@ -343,7 +343,7 @@ class TentApp(object):
         requestUrl = self.apiRootUrls[0] + resource
         headers = {'Accept': 'application/vnd.tent.v0+json'}
         debugRequest(requestUrl)
-        r = requests.get(requestUrl,headers=headers)
+        r = self.session.get(requestUrl,headers=headers)
         if r.json is None:
             debugError('not json.  here is the actual body text:')
             debugRaw(r.text)
