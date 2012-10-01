@@ -20,7 +20,7 @@ tentapp.debug = False
 app = tentapp.TentApp('https://rabbitwhiskers.tent.is')
 
 
-# # Check for Oauth saved credentials. Otherwise register for new auth credentials
+# Check for Oauth saved credentials. Otherwise register for new auth credentials
 app.oauthRegister()
 
 

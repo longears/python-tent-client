@@ -420,7 +420,10 @@ class TentApp(object):
         """
         # GET /posts  [/$id]
         debugMain('getPosts')
-        return self._genericGet('/posts')
+        if id is None:
+            return self._genericGet('/posts')
+        else:
+            return self._genericGet('/posts/%s'%id)
 
     def getPostAttachment(self,id,filename):
         # GET /posts/$id/attachments/$filename
