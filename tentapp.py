@@ -250,6 +250,12 @@ class TentApp(object):
         self.session = requests.session(hooks={"pre_request": self._authHook})
 
     def oauthRegister(self):
+        """Register this app with the server.
+        This will launch a web browser so the user can approve the app.
+        If auth keys are already present in this object (beacuse they were laoded
+        from a config file) this will return immediately because nothing needs
+        to be done.
+        """
         # if we already have keys, we don't need to do anything.
         if self.mac_key_id and self.mac_key:
             debugMain('oauth: we already have keys!  doing nothing.')
@@ -279,7 +285,7 @@ class TentApp(object):
 
         print '---------------------------------------------------------\\'
         print
-        print 'Opening web browser so you can grant access on tent.is.'
+        print 'Opening web browser so you can grant access on your tent server.'
         print
         print 'After you grant access, your browser will be redirected to'
         print 'a nonexistant page.  Look in the url and find the "code"'
@@ -351,7 +357,9 @@ class TentApp(object):
         return r.json
 
     def getProfile(self):
-        # this can happen without auth
+        """Get your own profile.
+        """
+        # GET /profile
         debugMain('getProfile')
         return self._genericGet('/profile')
 
@@ -360,28 +368,55 @@ class TentApp(object):
         pass # TODO
     
     def follow(self,entityUrl):
+        """Begin following the given entity.
+        Note that unlike the other follow-related methods, this one uses an entity URL
+        instead of an id.
+        """
         # POST /followings
         pass # TODO
 
     def getEntitiesIFollow(self,id=None):
+        """Get the entities I'm following.
+        """
         # GET /followings  [/$id]
         debugMain('getEntitiesIFollow')
-        return self._genericGet('/followings')
+        if id is None:
+            return self._genericGet('/followings')
+        else:
+            return self._genericGet('/followings/%s'%id)
 
     def unfollow(self,id):
+        """Unfollow an entity.
+        To get the id, you should first call followings() to get a list of entities and their ids.
+        """
         # DELETE /followings/$id
         pass # TODO
 
     def getFollowers(self,id=None):
+        """Get the entities who are following you.
+        """
         # GET /followers  [/$id]
         debugMain('getFollowers')
-        return self._genericGet('/followers')
+        if id is None:
+            return self._genericGet('/followers')
+        else:
+            return self._genericGet('/followers/%s'%id)
 
     def removeFollower(self,id):
+        """Cause someone to stop following you?
+        The docs are not clear on what this does.
+        To get the id, you should first call followers() to get a list of entities and their ids.
+        """
         # DELETE /followers/$id
         pass # TODO
 
     def putPost(self,post,attachments=[]):
+        """Post a new post to the server.
+        post should be a python dictionary representing a JSON object
+        See http://tent.io/docs/post-types for examples.
+        TODO: Attachments are not implemented yet.
+        """
+        # POST /posts
         debugMain('putPost')
 
         resource = '/posts'
