@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from __future__ import division
+import sys
 
 from colors import *
 
@@ -21,20 +22,23 @@ def end():
     """Print a summary of passes and fails
     """
     global NPASS, NFAIL
+    print
     if NFAIL:
         print '%s tests passed'%NPASS
         print red('%s tests failed'%NFAIL)
     else:
         print green('%s tests passed'%NPASS)
 
-
 def passs():
     global NPASS, NFAIL
+    print green('.'),
+    sys.stdout.flush()
     NPASS += 1
 
 def fail(msg=''):
     global NPASS, NFAIL
     NFAIL += 1
+    print
     print red('    fail: %s'%msg)
 
 
