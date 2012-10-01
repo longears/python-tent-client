@@ -367,18 +367,22 @@ class TentApp(object):
         return self._genericGet('/profile')
 
     def putProfile(profileType,value):
+        """ Set a value for one of the profile types on your profile.
+        TODO: not implemented yet.
+        """
         # PUT /profile/$profileType
-        pass # TODO
+        pass
     
     def follow(self,entityUrl):
         """Begin following the given entity.
         Note that unlike the other follow-related methods, this one uses an entity URL
         instead of an id.
+        TODO: not implemented yet.
         """
         # POST /followings
-        pass # TODO
+        pass
 
-    def getEntitiesIFollow(self,id=None):
+    def getFollowings(self,id=None):
         """Get the entities I'm following.
         """
         # GET /followings  [/$id]
@@ -391,9 +395,10 @@ class TentApp(object):
     def unfollow(self,id):
         """Unfollow an entity.
         To get the id, you should first call followings() to get a list of entities and their ids.
+        TODO: not implemented yet.
         """
         # DELETE /followings/$id
-        pass # TODO
+        pass
 
     def getFollowers(self,id=None):
         """Get the entities who are following you.
@@ -409,9 +414,10 @@ class TentApp(object):
         """Cause someone to stop following you?
         The docs are not clear on what this does.
         To get the id, you should first call followers() to get a list of entities and their ids.
+        TODO: not implemented yet.
         """
         # DELETE /followers/$id
-        pass # TODO
+        pass
 
     def putPost(self,post,attachments=[]):
         """Post a new post to the server.
@@ -464,8 +470,11 @@ class TentApp(object):
             return self._genericGet('/posts/%s'%id)
 
     def getPostAttachment(self,id,filename):
+        """Get an attachment from a post.
+        TODO: not implemented yet.
+        """
         # GET /posts/$id/attachments/$filename
-        pass # TODO
+        pass
 
 
 

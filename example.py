@@ -29,7 +29,7 @@ app.oauthRegister()
 profile = app.getProfile()
 debugJson(profile)
 
-followings = app.getEntitiesIFollow()
+followings = app.getFollowings()
 debugJson(followings)
 
 followers = app.getFollowers()
