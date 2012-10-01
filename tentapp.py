@@ -126,7 +126,7 @@ class TentApp(object):
             raise "serverDiscoveryUrl was not set in the constructor or the config file"
 
         # prepare a session for doing requests
-        if self.mac_key_id and self.mac_key:
+        if self.isAuthenticated():
             # if we already have keys from the config file, set up auth now
             debugDetail('building auth session')
             self.session = requests.session(hooks={"pre_request": self._authHook})
@@ -141,6 +141,9 @@ class TentApp(object):
 
     #------------------------------------
     #--- misc helpers
+
+    def isAuthenticated(self):
+        return bool(  self.mac_key_id and self.mac_key and self.appID  )
 
     def _authHook(self,req):
         # hook up sign_request() to be called on every request
@@ -257,7 +260,7 @@ class TentApp(object):
         to be done.
         """
         # if we already have keys, we don't need to do anything.
-        if self.mac_key_id and self.mac_key:
+        if self.isAuthenticated():
             debugMain('oauth: we already have keys!  doing nothing.')
             return
 
