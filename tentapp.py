@@ -366,11 +366,13 @@ class TentApp(object):
     #------------------------------------
     #--- API methods
 
-    def _genericGet(self,resource):
+    def _genericGet(self,resource,**kwargs):
+        """Do a get request using the provided kwargs as request parameters.
+        """
         requestUrl = self.apiRootUrls[0] + resource
         headers = {'Accept': 'application/vnd.tent.v0+json'}
         debugRequest(requestUrl)
-        r = self.session.get(requestUrl,headers=headers)
+        r = self.session.get(requestUrl,headers=headers,params=kwargs)
         if r.json is None:
             debugError('not json.  here is the actual body text:')
             debugRaw(r.text)
@@ -429,15 +431,20 @@ class TentApp(object):
             print
         return r.json
 
-    def getFollowings(self,id=None):
+    def getFollowings(self,id=None,**kwargs):
         """Get the entities I'm following.
+        Any additional keyword arguments will be passed to the server as request parameters.
+        These ones are supported by tentd:
+            limit       Max number to return; default to the max of 50
+            before_id
+            since_id
         """
         # GET /followings  [/$id]
         debugMain('getEntitiesIFollow')
         if id is None:
-            return self._genericGet('/followings')
+            return self._genericGet('/followings',**kwargs)
         else:
-            return self._genericGet('/followings/%s'%id)
+            return self._genericGet('/followings/%s'%id,**kwargs)
 
     def unfollow(self,id):
         """Unfollow an entity.
@@ -470,15 +477,20 @@ class TentApp(object):
         return True
         
 
-    def getFollowers(self,id=None):
+    def getFollowers(self,id=None,**kwargs):
         """Get the entities who are following you.
+        Any additional keyword arguments will be passed to the server as request parameters.
+        These ones are supported by tentd:
+            limit       Max number to return; default to the max of 50
+            before_id
+            since_id
         """
         # GET /followers  [/$id]
         debugMain('getFollowers')
         if id is None:
-            return self._genericGet('/followers')
+            return self._genericGet('/followers',**kwargs)
         else:
-            return self._genericGet('/followers/%s'%id)
+            return self._genericGet('/followers/%s'%id,**kwargs)
 
     def removeFollower(self,id):
         """Cause someone to stop following you?
@@ -527,17 +539,26 @@ class TentApp(object):
             print
         return r.json
 
-    def getPosts(self,id=None):
+    def getPosts(self,id=None,**kwargs):
         """With no auth, fetch your own public posts.
         With auth, fetch all your posts plus incoming posts from followings and people mentioning you.
         tent.is limits this to the last 50 posts or so unless additional parameters are present.
+        Any additional keyword arguments will be passed to the server as request parameters.
+        These ones are supported by tentd:
+            limit           Max number to return; default to the max of 50
+            before_id
+            since_id
+            before_time     Time should be an integer in Unix epoch format
+            since_time
+            entity          Posts published by the specified entity
+            post_types      Filter down to these posts types (comma-separated type URIs)
         """
         # GET /posts  [/$id]
         debugMain('getPosts')
         if id is None:
-            return self._genericGet('/posts')
+            return self._genericGet('/posts',**kwargs)
         else:
-            return self._genericGet('/posts/%s'%id)
+            return self._genericGet('/posts/%s'%id,**kwargs)
 
     def getPostAttachment(self,id,filename):
         """Get an attachment from a post.

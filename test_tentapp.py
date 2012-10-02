@@ -22,20 +22,20 @@ profile = app.getProfile()
 testlib.eq(   type(profile), dict, 'profile should be a dict'   )
 testlib.eq(   'https://tent.io/types/info/core/v0.1.0' in profile, True, 'profile should have a "core" section'   )
 
-followings = app.getFollowings()
+followings = app.getFollowings(limit=7)
 testlib.eq(   type(followings), list, 'followings should be a list'   )
 testlib.eq(   type(followings[0]), dict, 'followings should be a list of dicts'   )
-testlib.eq(   len(followings) > 10, True, 'this particular user should be following more than 10 entities.'   )
+testlib.eq(   len(followings) == 7, True, 'getFollowings: limit parameter should work'   )
 
-followers = app.getFollowers()
+followers = app.getFollowers(limit=7)
 testlib.eq(   type(followers), list, 'followers should be a list'   )
 testlib.eq(   type(followers[0]), dict, 'followers should be a list of dicts'   )
-testlib.eq(   len(followers) > 10, True, 'this particular user should be followed by more than 10 entities.'   )
+testlib.eq(   len(followers) == 7, True, 'getFollowers: limit parameter should work'   )
 
-posts = app.getPosts()
+posts = app.getPosts(limit=7)
 testlib.eq(   type(posts), list, 'posts should be a list'   )
 testlib.eq(   type(posts[0]), dict, 'posts should be a list of dicts'   )
-testlib.eq(   len(posts) > 10, True, 'this particular user should have more than 10 public posts'   )
+testlib.eq(   len(posts) == 7, True, 'getPosts: limit parameter should work'   )
 
 # Test unicode
 # This post has a unicode snowman in it: https://longears.tent.is/posts/hkl5ci
