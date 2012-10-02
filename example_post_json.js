@@ -1,4 +1,3 @@
-
 Actual JSON objects from the tent.is API.
 Missing so far:
     Profile of another person using your own authentication
@@ -8,6 +7,7 @@ Missing so far:
     Photo, Essay, Album
     Notification messages (see https://github.com/tent/tent.io/issues/92)
     Groups, eventually
+    Views (see http://tent.io/docs/post-types)
 
 
 --- PROFILE (your own profile, with authentication) ---
