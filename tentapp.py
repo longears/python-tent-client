@@ -398,7 +398,36 @@ class TentApp(object):
         TODO: not implemented yet.
         """
         # POST /followings
-        pass
+        debugMain('follow')
+
+        resource = '/followings'
+        requestUrl = self.apiRootUrls[0] + resource
+        headers = {
+            'Content-Type': 'application/vnd.tent.v0+json',
+            'Accept': 'application/vnd.tent.v0+json',
+        }
+        debugRequest('following via: %s'%requestUrl)
+        r = self.session.post(requestUrl, data=json.dumps({'entity':entityUrl}), headers=headers)
+        
+        debugDetail('request headers:')
+        debugJson(r.request.headers)
+        print
+        debugDetail('request data:')
+        debugRaw(r.request.data)
+        print
+        print yellow('  --  --  --  --  --')
+        print
+        debugDetail('response headers:')
+        debugJson(r.headers)
+        print
+        debugDetail('response body:')
+        debugRaw(r.text)
+        print
+        
+        if r.json is None:
+            debugError('failed to follow.')
+            print
+        return r.json
 
     def getFollowings(self,id=None):
         """Get the entities I'm following.
@@ -416,7 +445,30 @@ class TentApp(object):
         TODO: not implemented yet.
         """
         # DELETE /followings/$id
-        pass
+        debugMain('unfollow')
+        resource = '/followings/%s'%id
+        requestUrl = self.apiRootUrls[0] + resource
+        headers = {
+            'Accept': 'application/vnd.tent.v0+json',
+        }
+        debugRequest('unfollowing: %s'%requestUrl)
+        r = self.session.delete(requestUrl, headers=headers)
+        
+        debugDetail('request headers:')
+        debugJson(r.request.headers)
+        print
+        print yellow('  --  --  --  --  --')
+        print
+        debugDetail('response headers:')
+        debugJson(r.headers)
+        print
+        
+        if r.status_code is not 200:
+            debugError('failed to unfollow.')
+            print
+            return False
+        return True
+        
 
     def getFollowers(self,id=None):
         """Get the entities who are following you.
