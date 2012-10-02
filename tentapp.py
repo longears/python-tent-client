@@ -193,7 +193,19 @@ class TentApp(object):
 
         # TODO: the requests api here only returns one link even when there are more than one in the
         # header.  I think it returns the last one, but we should be using the first one.
-        self.apiRootUrls = [ r.links['https://tent.io/rels/profile']['url'] ]
+        try:
+            self.apiRootUrls = [ r.links['https://tent.io/rels/profile']['url'] ]
+        except KeyError:
+            # no Link header.  have to look in the body for a <link> tag.
+            try:
+                r = requests.get(url=serverDiscoveryUrl)
+                links = r.text.split('<link')[1:]
+                links = [link.split('>')[0] for link in links]
+                links = [link for link in links if 'rel="https://tent.io/rels/profile"' in link]
+                links = [link.split('href="')[1].split('"')[0] for link in links]
+                self.apiRootUrls = links
+            except IndexError:
+                1/0 # Failure to find a link.  TODO: better error handling
 
         # remove trailing "/profile" from urls
         for ii in range(len(self.apiRootUrls)):
