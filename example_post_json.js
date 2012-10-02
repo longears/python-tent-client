@@ -1,7 +1,7 @@
 
 Actual JSON objects from the tent.is API.
 Missing so far:
-    Someone else's profile using your own authentication
+    Profile of another person using your own authentication
     Repost with no auth
     Delete with auth
     Posts with attachments
