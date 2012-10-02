@@ -186,26 +186,51 @@
 --- POST: status (no auth) ---
 {
     "app": {
-        "name": null, 
-        "url": null
+        "name": "TentStatus", 
+        "url": "https://apps.tent.is/status"
     }, 
     "attachments": [], 
     "content": {
-        "action": "update", 
-        "types": [
-            "https://tent.io/types/info/basic/v0.1.0"
-        ]
+        "text": "Hey other devs, I'm moving to a new account: ^longears.  Follow me there?\r\n\r\n^daniel ^jamieforrest ^songgao ^tent ^elimisteve ^followben ^jonathan ^jyap"
     }, 
     "entity": "https://rabbitwhiskers.tent.is", 
-    "id": "aix8qk", 
+    "id": "ymq0yg", 
     "licenses": [], 
-    "mentions": [], 
+    "mentions": [
+        {
+            "entity": "https://longears.tent.is"
+        }, 
+        {
+            "entity": "https://daniel.tent.is"
+        }, 
+        {
+            "entity": "https://jamieforrest.tent.is"
+        }, 
+        {
+            "entity": "https://songgao.tent.is"
+        }, 
+        {
+            "entity": "https://tent.tent.is"
+        }, 
+        {
+            "entity": "https://elimisteve.tent.is"
+        }, 
+        {
+            "entity": "https://followben.tent.is"
+        }, 
+        {
+            "entity": "https://jonathan.tent.is"
+        }, 
+        {
+            "entity": "https://jyap.tent.is"
+        }
+    ], 
     "permissions": {
         "public": true
     }, 
-    "published_at": 1349154118, 
-    "type": "https://tent.io/types/post/profile/v0.1.0", 
-    "version": 2
+    "published_at": 1349153057, 
+    "type": "https://tent.io/types/post/status/v0.1.0", 
+    "version": 1
 }
 
 
@@ -217,16 +242,18 @@
     }, 
     "attachments": [], 
     "content": {
-        "text": "^lachlanhardy No, you're tent posting!"
+        "text": "^swansinflight ^rabbitwhiskers Oops, thanks :)"
     }, 
-    "entity": "https://elimisteve.tent.is", 
-    "following_id": "mwnjnv", 
-    "id": "591x2e", 
+    "entity": "https://longears.tent.is", 
+    "id": "a7t3bf", 
     "licenses": [], 
     "mentions": [
         {
-            "entity": "https://lachlanhardy.tent.is", 
-            "post": "82oxu7"
+            "entity": "https://swansinflight.tent.is", 
+            "post": "eqnth4"
+        }, 
+        {
+            "entity": "https://rabbitwhiskers.tent.is"
         }
     ], 
     "permissions": {
@@ -234,43 +261,10 @@
         "groups": [], 
         "public": true
     }, 
-    "published_at": 1349168071, 
-    "received_at": 1349168073, 
+    "published_at": 1349170604, 
+    "received_at": 1349170603, 
     "type": "https://tent.io/types/post/status/v0.1.0", 
-    "updated_at": 1349168073, 
-    "version": 1
-}
-
-
---- POST: repost (auth) ---
-{
-    "app": {
-        "name": "TentStatus", 
-        "url": "https://apps.tent.is/status"
-    }, 
-    "attachments": [], 
-    "content": {
-        "text": "^lachlanhardy No, you're tent posting!"
-    }, 
-    "entity": "https://elimisteve.tent.is", 
-    "following_id": "mwnjnv", 
-    "id": "591x2e", 
-    "licenses": [], 
-    "mentions": [
-        {
-            "entity": "https://lachlanhardy.tent.is", 
-            "post": "82oxu7"
-        }
-    ], 
-    "permissions": {
-        "entities": {}, 
-        "groups": [], 
-        "public": true
-    }, 
-    "published_at": 1349168071, 
-    "received_at": 1349168073, 
-    "type": "https://tent.io/types/post/status/v0.1.0", 
-    "updated_at": 1349168073, 
+    "updated_at": 1349170603, 
     "version": 1
 }
 
@@ -283,20 +277,46 @@
     }, 
     "attachments": [], 
     "content": {
-        "action": "update", 
-        "types": [
-            "https://tent.io/types/info/basic/v0.1.0"
-        ]
+        "id": "4xl58k"
     }, 
     "entity": "https://rabbitwhiskers.tent.is", 
-    "id": "aix8qk", 
+    "id": "otbgt0", 
     "licenses": [], 
     "mentions": [], 
     "permissions": {
         "public": true
     }, 
-    "published_at": 1349154118, 
-    "type": "https://tent.io/types/post/profile/v0.1.0", 
+    "published_at": 1349137921, 
+    "type": "https://tent.io/types/post/delete/v0.1.0", 
     "version": 2
+}
+
+
+--- POST: repost (auth) ---
+{
+    "app": {
+        "name": "TentStatus", 
+        "url": "https://apps.tent.is/status"
+    }, 
+    "attachments": [], 
+    "content": {
+        "entity": "https://graue.tent.is", 
+        "id": "ic7yue"
+    }, 
+    "entity": "https://elimisteve.tent.is", 
+    "following_id": "mwnjnv", 
+    "id": "wmw9xd", 
+    "licenses": [], 
+    "mentions": [], 
+    "permissions": {
+        "entities": {}, 
+        "groups": [], 
+        "public": true
+    }, 
+    "published_at": 1349167549, 
+    "received_at": 1349167550, 
+    "type": "https://tent.io/types/post/repost/v0.1.0", 
+    "updated_at": 1349167550, 
+    "version": 1
 }
 
