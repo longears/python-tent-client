@@ -1,4 +1,16 @@
---- PROFILE (auth) ---
+
+Actual JSON objects from the tent.is API.
+Missing so far:
+    Someone else's profile using your own authentication
+    Repost with no auth
+    Delete with auth
+    Posts with attachments
+    Photo, Essay, Album
+    Notification messages (see https://github.com/tent/tent.io/issues/92)
+    Groups, eventually
+
+
+--- PROFILE (your own profile, with authentication) ---
 {
     "https://tent.io/types/info/basic/v0.1.0": {
         "avatar_url": "https://twimg0-a.akamaihd.net/profile_images/1661050796/rabbit_egg_pixel_4x.png", 
@@ -319,4 +331,5 @@
     "updated_at": 1349167550, 
     "version": 1
 }
+
 
