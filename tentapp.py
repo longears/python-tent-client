@@ -445,7 +445,30 @@ class TentApp(object):
         TODO: not implemented yet.
         """
         # DELETE /followings/$id
-        pass
+        debugMain('unfollow')
+        resource = '/followings/%s'%id
+        requestUrl = self.apiRootUrls[0] + resource
+        headers = {
+            'Accept': 'application/vnd.tent.v0+json',
+        }
+        debugRequest('unfollowing: %s'%requestUrl)
+        r = self.session.delete(requestUrl, headers=headers)
+        
+        debugDetail('request headers:')
+        debugJson(r.request.headers)
+        print
+        print yellow('  --  --  --  --  --')
+        print
+        debugDetail('response headers:')
+        debugJson(r.headers)
+        print
+        
+        if r.status_code is not 200:
+            debugError('failed to unfollow.')
+            print
+            return False
+        return True
+        
 
     def getFollowers(self,id=None):
         """Get the entities who are following you.
