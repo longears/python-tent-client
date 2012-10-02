@@ -398,7 +398,36 @@ class TentApp(object):
         TODO: not implemented yet.
         """
         # POST /followings
-        pass
+        debugMain('follow')
+
+        resource = '/followings'
+        requestUrl = self.apiRootUrls[0] + resource
+        headers = {
+            'Content-Type': 'application/vnd.tent.v0+json',
+            'Accept': 'application/vnd.tent.v0+json',
+        }
+        debugRequest('following via: %s'%requestUrl)
+        r = self.session.post(requestUrl, data=json.dumps({'entity':entityUrl}), headers=headers)
+        
+        debugDetail('request headers:')
+        debugJson(r.request.headers)
+        print
+        debugDetail('request data:')
+        debugRaw(r.request.data)
+        print
+        print yellow('  --  --  --  --  --')
+        print
+        debugDetail('response headers:')
+        debugJson(r.headers)
+        print
+        debugDetail('response body:')
+        debugRaw(r.text)
+        print
+        
+        if r.json is None:
+            debugError('failed to follow.')
+            print
+        return r.json
 
     def getFollowings(self,id=None):
         """Get the entities I'm following.
