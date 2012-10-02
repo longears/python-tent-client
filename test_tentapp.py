@@ -6,7 +6,7 @@ from colors import *
 import testlib
 
 import tentapp
-tentapp.debug = True
+tentapp.debug = False
 
 
 print yellow('-----------------------------------------------------------------------\\')
