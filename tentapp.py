@@ -198,6 +198,12 @@ class TentApp(object):
         # remove trailing "/profile" from urls
         for ii in range(len(self.apiRootUrls)):
             self.apiRootUrls[ii] = self.apiRootUrls[ii].replace('/profile','')
+            # convert relative urls to absolute
+            # this assumes they are relative to the serverDiscoveryUrl
+            # this is fragile right now because it assumes the serverDiscoveryUrl doesn't
+            # end with a slash
+            if not self.apiRootUrls[ii].startswith('http'):
+                self.apiRootUrls[ii] = serverDiscoveryUrl + self.apiRootUrls[ii]
 
         debugDetail('server api urls = %s'%self.apiRootUrls)
 
