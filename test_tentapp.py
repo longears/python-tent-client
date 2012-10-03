@@ -44,6 +44,30 @@ aFollower = app.getFollowers()[0]
 testlib.eq(    'groups' in aFollower, True, 'authenticated GET /followers should have "groups"'   )
 
 
+# post a status and then get it back
+text = "This is a test message from python-tent-client's test_tentapp.py.  The time is %s"%int(time.time())
+post = {
+    'type': 'https://tent.io/types/post/status/v0.1.0',
+    'published_at': int(time.time()),
+    'permissions': {
+        'public': True,
+    },
+    'licenses': ['http://creativecommons.org/licenses/by/3.0/'],
+    'content': {
+        'text': text,
+    }
+}
+app.putPost(post)
+
+posts = app.getPosts()
+success = False
+for post in posts:
+    if '/status/' in post['type']:
+        if post['content']['text'] == text:
+            success = True
+testlib.eq(   success, True, 'should be able to post a status and then get it back'   )
+
+
 #-------------------------------------------------------------------------------------------
 #--- BASIC NON-AUTHENTICATED FUNCTIONALITY
 

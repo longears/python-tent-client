@@ -55,7 +55,7 @@ debugJson(posts[0])
 
 # Post a new status message
 if app.isAuthenticated():
-    text = 'This is a test message from example.py.  The time is %s'%int(time.time())
+    text = "This is a test message from python-tent-client's example.py.  The time is %s"%int(time.time())
     post = {
         'type': 'https://tent.io/types/post/status/v0.1.0',
         'published_at': int(time.time()),
