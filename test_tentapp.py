@@ -18,9 +18,11 @@ testlib.begin('TentApp')
 
 # These are keys for http://pythonclienttest.tent.is
 # Play nice with them.
-keys = {'appID': 'qxtrbu',
-        'mac_key': 'e3d9f4d8133e0f6391387b44b7a99e23',
-        'mac_key_id': 'u:76d9253c'}
+keys = {
+    "appID": "as3yqy", 
+    "mac_key": "2dc5df2a3b3f556518aca78a79fd82cf", 
+    "mac_key_id": "u:6b5fb706"
+}
 
 app = tentapp.TentApp('https://pythonclienttest.tent.is')
 testlib.eq(    app.isAuthenticated(), False, 'when starting, should not be authenticated'   )
