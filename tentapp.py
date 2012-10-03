@@ -154,7 +154,7 @@ class TentApp(object):
             raise "entityUrl was not set in the constructor or the config file"
 
         # set up default headers for the session
-        headers = DEFAULT_HEADERS
+        headers = dict(DEFAULT_HEADERS)
         headers.update({
             'Host':urlparse(self.entityUrl).netloc
         })
@@ -273,7 +273,7 @@ class TentApp(object):
         debugJson(appInfoJson)
 
         # set up default headers for the session
-        headers = DEFAULT_HEADERS
+        headers = dict(DEFAULT_HEADERS)
         headers.update({
             'Content-Type': 'application/vnd.tent.v0+json',
             'Host':urlparse(self.entityUrl).netloc
@@ -369,6 +369,7 @@ class TentApp(object):
 
         # then construct and send the request
         print
+        headers = dict(DEFAULT_HEADERS)
         headers.update({
             'Content-Type': 'application/vnd.tent.v0+json',
         })
@@ -443,7 +444,7 @@ class TentApp(object):
 
         resource = '/followings'
         requestUrl = self.apiRootUrls[0] + resource
-        headers = DEFAULT_HEADERS
+        headers = dict(DEFAULT_HEADERS)
         headers.update({
             'Content-Type': 'application/vnd.tent.v0+json',
         })
@@ -548,7 +549,7 @@ class TentApp(object):
 
         resource = '/posts'
         requestUrl = self.apiRootUrls[0] + resource
-        headers = DEFAULT_HEADERS
+        headers = dict(DEFAULT_HEADERS)
         headers.update({
             'Content-Type': 'application/vnd.tent.v0+json',
         })
