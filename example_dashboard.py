@@ -12,9 +12,15 @@ from colors import *
 print yellow('-----------------------------------------------------------------------\\')
 print
 
-app = tentapp.TentApp('https://rabbitwhiskers.tent.is')
+# These are keys for http://pythonclienttest.tent.is
+# Play nice with them.
+keys = {'appID': 'qxtrbu',
+        'mac_key': 'e3d9f4d8133e0f6391387b44b7a99e23',
+        'mac_key_id': 'u:76d9253c'}
 
-app.oauthRegister()
+app = tentapp.TentApp('https://pythonclienttest.tent.is')
+
+app.authenticate(keys)
 
 # Because we've authenticated, getPosts() will get not only our own public posts
 # but also those of people we follow and posts that mention us.

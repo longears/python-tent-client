@@ -13,10 +13,37 @@ print yellow('------------------------------------------------------------------
 testlib.begin('TentApp')
 
 
+#-------------------------------------------------------------------------------------------
+#--- AUTHENTICATION
+
+# These are keys for http://pythonclienttest.tent.is
+# Play nice with them.
+keys = {'appID': 'qxtrbu',
+        'mac_key': 'e3d9f4d8133e0f6391387b44b7a99e23',
+        'mac_key_id': 'u:76d9253c'}
+
+app = tentapp.TentApp('https://pythonclienttest.tent.is')
+testlib.eq(    app.isAuthenticated(), False, 'when starting, should not be authenticated'   )
+
+# We use the result of getFollowers to see if we're actually authenticated or not
+# The resulting JSON objects will have a "groups" field if and only if the authentication is working.
+aFollower = app.getFollowers()[0]
+testlib.eq(    'groups' in aFollower, False, 'non-authenticated GET /followers should not have "groups"'   )
+
+keys2 = app.authenticate(keys)
+testlib.eq(    keys == keys2, True, 'authenticate(keys) should not modify the keys'   )
+testlib.eq(    app.isAuthenticated(), True, 'authenticate() should affect isAuthenticated()'   )
+
+aFollower = app.getFollowers()[0]
+testlib.eq(    'groups' in aFollower, True, 'authenticated GET /followers should have "groups"'   )
+
+
+#-------------------------------------------------------------------------------------------
+#--- BASIC NON-AUTHENTICATED FUNCTIONALITY
+
 app = tentapp.TentApp('https://tent.tent.is')
 testlib.eq(   app.apiRootUrls, ['https://tent.tent.is/tent'], 'discovery should get the correct api root urls'   )
-
-testlib.eq(app.isAuthenticated(), False, 'when starting with no config file, should not be authenticated')
+testlib.eq(app.isAuthenticated(), False, 'when starting, should not be authenticated')
 
 profile = app.getProfile()
 testlib.eq(   type(profile), dict, 'profile should be a dict'   )
@@ -37,7 +64,10 @@ testlib.eq(   type(posts), list, 'posts should be a list'   )
 testlib.eq(   type(posts[0]), dict, 'posts should be a list of dicts'   )
 testlib.eq(   len(posts) == 7, True, 'getPosts: limit parameter should work'   )
 
-# Test unicode
+
+#-------------------------------------------------------------------------------------------
+#--- UNICODE
+
 # This post has a unicode snowman in it: https://longears.tent.is/posts/hkl5ci
 longearsApp = tentapp.TentApp('https://longears.tent.is')
 post = longearsApp.getPosts(id='hkl5ci')

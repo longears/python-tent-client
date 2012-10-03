@@ -51,7 +51,7 @@ DEFAULT_HEADERS = {
 #--- APP
 
 class TentApp(object):
-    def __init__(self,entityUrl=None):
+    def __init__(self,entityUrl):
         """The first time you call this you must set entityUrl.
         After that you can omit it and it will be read from the auth config file.
         If entityUrl is None and there is no auth config file, an error will be raised.
@@ -81,9 +81,7 @@ class TentApp(object):
         """
         debugMain('init: entityUrl = %s'%entityUrl)
 
-        # path to the config file for saving/loading auth details.
-        # TODO: let the user pass this in to the constructor instead of hardcoding it.
-        self.configFilePath = 'auth.cfg'
+        self.entityUrl = entityUrl
 
         # details of this app
         #  basic
@@ -124,54 +122,34 @@ class TentApp(object):
         #  chosen by us 
         self.state = None
 
-        #  obtained from the server
-        self.appID = None # the server assigns this to us during registration
-
-        #  keys
+        #  keys obtained from the server
         #   At first these are set to temp values during the registration & oauth approval process.
         #   When that completes, they are replaced with our permanent keys.
+        self.appID = None # the server assigns this to us during registration
         self.mac_key_id = None
         self.mac_key = None
         self.mac_algorithm = None
 
-        # try to load auth details from previously saved config file
-        # this will set appID, entityUrl, mac_key_id, and mac_key
-        # if no config file exists, this does nothing
-        self.entityUrl = None
-        self._readConfigFile()
-
-        if entityUrl and entityUrl != self.entityUrl:
-            # user has set a specific entityUrl and
-            # either this is the first time through (no config file) or the entityUrl
-            # is different than the one in the config file, so we need to reset the auth info
-            self.entityUrl = entityUrl
-            self.appID = None
-            self.mac_key_id = None
-            self.mac_key = None
-            self.mac_algorithm = None
-
-        if entityUrl is None:
-            raise "entityUrl was not set in the constructor or the config file"
-
-        # set up default headers for the session
+        # prepare a session for doing requests
+        # we don't have auth keys yet, so make a non-auth session.
+        # if authenticate is run later, this session will be replaced with a session that does authentication
         headers = dict(DEFAULT_HEADERS)
         headers.update({
             'Host':urlparse(self.entityUrl).netloc
         })
-
-        # prepare a session for doing requests
-        if self.isAuthenticated():
-            # if we already have keys from the config file, set up auth now
-            debugDetail('building auth session')
-            self.session = requests.session(hooks={"pre_request": self._authHook}, headers=headers)
-        else:
-            # if we don't have auth keys, make a non-auth session.
-            # if oauthRegister is run later, this session will be replaced with a session that does authentication
-            self.session = requests.session(headers=headers)
+        self.session = requests.session(hooks={"pre_request": self._authHook}, headers=headers)
 
         # this list of api roots will be filled in by _discoverAPIurls()
         self.apiRootUrls = []
         self._discoverAPIUrls(self.entityUrl)
+
+        # now that we've run discovery, the entityUrl might have changed
+        # so we have to make a new session again.
+        headers = dict(DEFAULT_HEADERS)
+        headers.update({
+            'Host':urlparse(self.entityUrl).netloc
+        })
+        self.session = requests.session(hooks={"pre_request": self._authHook}, headers=headers)
 
     #------------------------------------
     #--- misc helpers
@@ -184,34 +162,9 @@ class TentApp(object):
         # using the current value of self.mac_key_id and self.mac_key
         debugAuth('auth hook. mac key id: %s'%repr(self.mac_key_id))
         debugAuth('auth hook. mac key: %s'%repr(self.mac_key))
-        macauthlib.sign_request(req, id=self.mac_key_id, key=self.mac_key, hashmod=hashlib.sha256)
+        if self.isAuthenticated():
+            macauthlib.sign_request(req, id=self.mac_key_id, key=self.mac_key, hashmod=hashlib.sha256)
         return req
-
-    def _writeConfigFile(self):
-        debugDetail('writing config file')
-        f = open(self.configFilePath,'w')
-        f.write(json.dumps({
-            'entity': self.entityUrl,
-            'appID': self.appID,
-            'mac_key_id': self.mac_key_id,
-            'mac_key': self.mac_key,
-        })+'\n')
-        f.close()
-
-    def _readConfigFile(self):
-        if not os.path.exists(self.configFilePath):
-            debugDetail('no config file exists')
-            return
-        debugDetail('reading config file')
-        jsonObject = json.loads(open(self.configFilePath,'r').read())
-        self.appID = jsonObject['appID'].encode('utf-8')
-        self.entityUrl = jsonObject['entity'].encode('utf-8')
-        self.mac_key_id = jsonObject['mac_key_id'].encode('utf-8')
-        self.mac_key = jsonObject['mac_key'].encode('utf-8')
-        debugDetail(' config file read for %s'%self.entityUrl)
-        debugDetail(' appID = %s'%self.appID)
-        debugDetail(' mac_key_id = %s'%self.mac_key_id)
-        debugDetail(' mac_key = %s'%self.mac_key)
 
     #------------------------------------
     #--- server discovery
@@ -276,7 +229,6 @@ class TentApp(object):
         headers = dict(DEFAULT_HEADERS)
         headers.update({
             'Content-Type': 'application/vnd.tent.v0+json',
-            'Host':urlparse(self.entityUrl).netloc
         })
 
         requestUrl = self.apiRootUrls[0] + '/apps'
@@ -306,29 +258,41 @@ class TentApp(object):
         # this will be used for all future requests
         debugDetail('building auth session')
 
-        # remove the 'Content-Type' header from headers, as it's not needed for all request types
-        del headers['Content-Type']
 
-        self.session = requests.session(hooks={"pre_request": self._authHook}, headers=headers)
-
-    def oauthRegister(self):
+    def authenticate(self,keys=None):
         """Register this app with the server.
-        This will launch a web browser so the user can approve the app.
-        If auth keys are already present in this object (beacuse they were laoded
-        from a config file) this will return immediately because nothing needs
-        to be done.
+        There are two ways to use this:
+            1. provide your own keys:
+                app.authenticate(myKeys)
+            2. get new keys
+                myKeys = app.authenticate()
+        Both cases return a key dictionary.
+        In case 2, this will launch a web browser so the user can approve the app.
+        The keys that result from that procoess will be returned.
+
+        A key dictionary should have the following items:
+            appId, mac_key_id, mac_key
         """
+
+        # if we have just been handed keys, stash them in self
+        if keys:
+            self.appID = keys['appID']
+            self.mac_key_id = keys['mac_key_id']
+            self.mac_key = keys['mac_key']
+            debugMain('authenticate: ok, thanks for supplying keys')
+            return keys
+
         # if we already have keys, we don't need to do anything.
         if self.isAuthenticated():
-            debugMain('oauth: we already have keys!  doing nothing.')
+            debugMain('authenticate: we already have keys!  doing nothing.')
             return
 
-        # first, register with the server to set
+        # first, register with the server to get temp keys:
         #  self.appID and self.mac_*
         # this also makes a new self.session which uses MAC authentication
         self._register()
 
-        debugMain('oauth')
+        debugMain('authenticate: converting temp keys into permanent keys')
 
         # send user to the tent.is url to grant access
         # we will get the "code" in response
@@ -401,8 +365,12 @@ class TentApp(object):
         debugDetail('final mac key id: %s'%self.mac_key_id)
         debugDetail('final mac key: %s'%self.mac_key)
 
-        # save the keys to disk
-        self._writeConfigFile()
+        # return the keys
+        return {
+            'appID': self.appID,
+            'mac_key_id': self.mac_key_id,
+            'mac_key': self.mac_key,
+        }
         
     #------------------------------------
     #--- API methods
