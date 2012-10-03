@@ -12,6 +12,7 @@ import requests
 import webbrowser
 import macauthlib
 from urllib import urlencode
+from urlparse import urlparse
 from colors import *
 
 
@@ -533,9 +534,11 @@ class TentApp(object):
 
         resource = '/posts'
         requestUrl = self.apiRootUrls[0] + resource
+        host_header = urlparse(self.apiRootUrls[0]).netloc
         headers = {
             'Content-Type': 'application/vnd.tent.v0+json',
             'Accept': 'application/vnd.tent.v0+json',
+            'Host': host_header
         }
         debugRequest('posting to: %s'%requestUrl)
         r = self.session.post(requestUrl, data=json.dumps(post), headers=headers)
