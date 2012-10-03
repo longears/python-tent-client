@@ -44,14 +44,35 @@ def randomString():
 #--- APP
 
 class TentApp(object):
-    def __init__(self,serverDiscoveryUrl=None):
-        """The first time you call this, you must set serverDiscoveryUrl.
+    def __init__(self,entityUrl=None):
+        """The first time you call this you must set entityUrl.
         After that you can omit it and it will be read from the auth config file.
-        If serverDiscoveryUrl is None and there is no auth config file, an error will be raised.
-        Upon instantiation a TentApp object will perform server discovery on the serverDiscoveryUrl,
+        If entityUrl is None and there is no auth config file, an error will be raised.
+        Upon instantiation a TentApp object will perform server discovery on the entityUrl,
          so you should expect a short delay during instantiation.
+        Note that the discover process can result in a new value of entityUrl under some
+         circumstances(*), so your code may want to grab the new value of self.entityUrl after
+         instantiation and discovery is complete.
+        (*) Scenario:
+            app = TentApp('http://foo.blogspot.com')
+            Let's say that
+                http://foo.blogspot.com
+            has a <link> tag pointing to
+                https://foo.tent.is/tent/profile
+            We fetch foo.tent.is/profile and get new values for apiRootUrls and entityUrl:
+                self.apiRootUrls = ['https://foo.tent.is/tent']
+                self.entityUrl = 'https://foo.tent.is'
+            Now self.entityUrl is not the same as the value that was
+            passed into the constructor.
+            This is a valid way of using your blogspot page as a kind of "tent redirect"
+            to your real entityUrl, which will be "https://foo.tent.is".
+            It's also possible that the server at tent.is would let you choose your own
+            entityUrl, in which case you could choose your blogspot URL.  In that case,
+            your entityUrl would be your blogspot URL.
+            The entityUrl will be shown to other users in their Tent apps as a way of
+            identifying you.
         """
-        debugMain('init: serverDiscoveryUrl = %s'%serverDiscoveryUrl)
+        debugMain('init: entityUrl = %s'%entityUrl)
 
         # path to the config file for saving/loading auth details.
         # TODO: let the user pass this in to the constructor instead of hardcoding it.
@@ -107,23 +128,23 @@ class TentApp(object):
         self.mac_algorithm = None
 
         # try to load auth details from previously saved config file
-        # this will set appID, serverDiscoveryUrl, mac_key_id, and mac_key
+        # this will set appID, entityUrl, mac_key_id, and mac_key
         # if no config file exists, this does nothing
-        self.serverDiscoveryUrl = None
+        self.entityUrl = None
         self._readConfigFile()
 
-        if serverDiscoveryUrl and serverDiscoveryUrl != self.serverDiscoveryUrl:
-            # user has set a specific serverDiscoveryUrl and
-            # either this is the first time through (no config file) or the serverDiscoveryUrl
+        if entityUrl and entityUrl != self.entityUrl:
+            # user has set a specific entityUrl and
+            # either this is the first time through (no config file) or the entityUrl
             # is different than the one in the config file, so we need to reset the auth info
-            self.serverDiscoveryUrl = serverDiscoveryUrl
+            self.entityUrl = entityUrl
             self.appID = None
             self.mac_key_id = None
             self.mac_key = None
             self.mac_algorithm = None
 
-        if serverDiscoveryUrl is None:
-            raise "serverDiscoveryUrl was not set in the constructor or the config file"
+        if entityUrl is None:
+            raise "entityUrl was not set in the constructor or the config file"
 
         # prepare a session for doing requests
         if self.isAuthenticated():
@@ -137,7 +158,7 @@ class TentApp(object):
 
         # this list of api roots will be filled in by _discoverAPIurls()
         self.apiRootUrls = []
-        self._discoverAPIUrls(self.serverDiscoveryUrl)
+        self._discoverAPIUrls(self.entityUrl)
 
     #------------------------------------
     #--- misc helpers
@@ -157,7 +178,7 @@ class TentApp(object):
         debugDetail('writing config file')
         f = open(self.configFilePath,'w')
         f.write(json.dumps({
-            'entity': self.serverDiscoveryUrl,
+            'entity': self.entityUrl,
             'appID': self.appID,
             'mac_key_id': self.mac_key_id,
             'mac_key': self.mac_key,
@@ -171,10 +192,10 @@ class TentApp(object):
         debugDetail('reading config file')
         jsonObject = json.loads(open(self.configFilePath,'r').read())
         self.appID = jsonObject['appID'].encode('utf-8')
-        self.serverDiscoveryUrl = jsonObject['entity'].encode('utf-8')
+        self.entityUrl = jsonObject['entity'].encode('utf-8')
         self.mac_key_id = jsonObject['mac_key_id'].encode('utf-8')
         self.mac_key = jsonObject['mac_key'].encode('utf-8')
-        debugDetail(' config file read for %s'%self.serverDiscoveryUrl)
+        debugDetail(' config file read for %s'%self.entityUrl)
         debugDetail(' appID = %s'%self.appID)
         debugDetail(' mac_key_id = %s'%self.mac_key_id)
         debugDetail(' mac_key = %s'%self.mac_key)
@@ -182,14 +203,14 @@ class TentApp(object):
     #------------------------------------
     #--- server discovery
 
-    def _discoverAPIUrls(self,serverDiscoveryUrl):
+    def _discoverAPIUrls(self,entityUrl):
         """set self.apiRootUrls, return None
         """
-        # get self.serverDiscoveryUrl doing just a HEAD request
+        # get self.entityUrl doing just a HEAD request
         # look in HTTP header for Link: foo; rel="$REL_PROFILE"
         # TODO: if not, get whole page and look for <link href="foo" rel="$REL_PROFILE" />
-        debugRequest('head request for discovery: %s'%serverDiscoveryUrl)
-        r = requests.head(url=serverDiscoveryUrl)
+        debugRequest('head request for discovery: %s'%entityUrl)
+        r = requests.head(url=entityUrl)
 
         # TODO: the requests api here only returns one link even when there are more than one in the
         # header.  I think it returns the last one, but we should be using the first one.
@@ -198,7 +219,7 @@ class TentApp(object):
         except KeyError:
             # no Link header.  have to look in the body for a <link> tag.
             try:
-                r = requests.get(url=serverDiscoveryUrl)
+                r = requests.get(url=entityUrl)
                 links = r.text.split('<link')[1:]
                 links = [link.split('>')[0] for link in links]
                 links = [link for link in links if 'rel="https://tent.io/rels/profile"' in link]
@@ -211,11 +232,11 @@ class TentApp(object):
         for ii in range(len(self.apiRootUrls)):
             self.apiRootUrls[ii] = self.apiRootUrls[ii].replace('/profile','')
             # convert relative urls to absolute
-            # this assumes they are relative to the serverDiscoveryUrl
-            # this is fragile right now because it assumes the serverDiscoveryUrl doesn't
+            # this assumes they are relative to the entityUrl
+            # this is fragile right now because it assumes the entityUrl doesn't
             # end with a slash
             if not self.apiRootUrls[ii].startswith('http'):
-                self.apiRootUrls[ii] = serverDiscoveryUrl + self.apiRootUrls[ii]
+                self.apiRootUrls[ii] = entityUrl + self.apiRootUrls[ii]
 
         debugDetail('server api urls = %s'%self.apiRootUrls)
 
