@@ -22,12 +22,14 @@ app = tentapp.TentApp(entityUrl)
 
 
 # Authenticate
+# You can use your own database here instead of KeyStore if you want.
+# KeyStore just saves the keys to a local JSON file.
 keyStore = tentapp.KeyStore('keystore.js')
 if keyStore.getKey(entityUrl):
-    # reuse auth keys from a previous run
+    # Reuse auth keys from a previous run
     app.authenticate(keyStore.getKey(entityUrl))
 else:
-    # get auth keys for the first time
+    # Get auth keys for the first time
     # and save them into the keyStore
     keyStore.addKey(entityUrl, app.authenticate())
 
