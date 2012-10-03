@@ -16,15 +16,9 @@ testlib.begin('TentApp')
 #-------------------------------------------------------------------------------------------
 #--- AUTHENTICATION
 
-# These are keys for http://pythonclienttest.tent.is
-# Play nice with them.
-keys = {
-    "appID": "as3yqy", 
-    "mac_key": "2dc5df2a3b3f556518aca78a79fd82cf", 
-    "mac_key_id": "u:6b5fb706"
-}
+entityUrl = 'https://pythonclienttest.tent.is'
+app = tentapp.TentApp(entityUrl)
 
-app = tentapp.TentApp('https://pythonclienttest.tent.is')
 testlib.eq(    app.isAuthenticated(), False, 'when starting, should not be authenticated'   )
 
 # We use the result of getFollowers to see if we're actually authenticated or not
@@ -32,8 +26,18 @@ testlib.eq(    app.isAuthenticated(), False, 'when starting, should not be authe
 aFollower = app.getFollowers()[0]
 testlib.eq(    'groups' in aFollower, False, 'non-authenticated GET /followers should not have "groups"'   )
 
-keys2 = app.authenticate(keys)
-testlib.eq(    keys == keys2, True, 'authenticate(keys) should not modify the keys'   )
+# Authenticate
+# You can use your own database here instead of KeyStore if you want.
+# KeyStore just saves the keys to a local JSON file.
+keyStore = tentapp.KeyStore('keystore.js')
+if keyStore.getKey(entityUrl):
+    # Reuse auth keys from a previous run
+    app.authenticate(keyStore.getKey(entityUrl))
+else:
+    # Get auth keys for the first time
+    # and save them into the keyStore
+    keyStore.addKey(entityUrl, app.authenticate())
+
 testlib.eq(    app.isAuthenticated(), True, 'authenticate() should affect isAuthenticated()'   )
 
 aFollower = app.getFollowers()[0]
