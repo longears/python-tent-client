@@ -156,7 +156,7 @@ class TentApp(object):
         # set up default headers for the session
         headers = DEFAULT_HEADERS
         headers.update({
-            'Host':urlparse(self.serverDiscoveryUrl).netloc
+            'Host':urlparse(self.entityUrl).netloc
         })
 
         # prepare a session for doing requests
@@ -276,7 +276,7 @@ class TentApp(object):
         headers = DEFAULT_HEADERS
         headers.update({
             'Content-Type': 'application/vnd.tent.v0+json',
-            'Host':urlparse(self.serverDiscoveryUrl).netloc
+            'Host':urlparse(self.entityUrl).netloc
         })
 
         requestUrl = self.apiRootUrls[0] + '/apps'
