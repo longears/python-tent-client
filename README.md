@@ -58,28 +58,33 @@ There are some other examples at the end of `tentapp.py`.  Here's a quick overvi
 
 ```
 import tentapp
-
 tentapp.debug = False  # Turn this on if you want to see verbose debugging info while
                        # the app is running.  Defaults to False.
 
-# "entity" is the Tent term for the URL to your Tent server.
+
+# "entity" is the Tent version of a username.  It's a full URL.
 entityUrl = 'https://pythonclienttest.tent.is'
 app = tentapp.TentApp(entityUrl)
+
 
 # Authenticate
 # You can use your own database here instead of KeyStore if you want.
 # KeyStore just saves the keys to a local JSON file.
 keyStore = tentapp.KeyStore('keystore.js')
-if keyStore.getKey(entityUrl):
+keys = keyStore.getKey(entityUrl)
+if keys:
     # Reuse auth keys from a previous run
-    app.authenticate(keyStore.getKey(entityUrl))
+    app.authenticate(keys)
 else:
     # Get auth keys for the first time
     # and save them into the keyStore
-    keyStore.addKey(entityUrl, app.authenticate())
+    keys = app.authenticate()
+    keyStore.addKey(entityUrl, keys)
+
 
 # Get your profile info as a JSON-style Python dictionary
 print app.getProfile()
+
 
 # Post a new post.  For now you need to supply the JSON dictionary yourself.
 app.putPost(yourPostJsonHere)

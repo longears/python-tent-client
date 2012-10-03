@@ -14,7 +14,7 @@ print yellow('------------------------------------------------------------------
 tentapp.debug = False
 
 
-# "entity" is the Tent term for the URL to your Tent server.
+# "entity" is the Tent version of a username.  It's a full URL.
 # For tent.is it should be "https://yourname.tent.is"
 # Instantiating this class will perform discovery on the entity URL
 entityUrl = 'https://pythonclienttest.tent.is'
@@ -25,13 +25,15 @@ app = tentapp.TentApp(entityUrl)
 # You can use your own database here instead of KeyStore if you want.
 # KeyStore just saves the keys to a local JSON file.
 keyStore = tentapp.KeyStore('keystore.js')
-if keyStore.getKey(entityUrl):
+keys = keyStore.getKey(entityUrl)
+if keys:
     # Reuse auth keys from a previous run
-    app.authenticate(keyStore.getKey(entityUrl))
+    app.authenticate(keys)
 else:
     # Get auth keys for the first time
     # and save them into the keyStore
-    keyStore.addKey(entityUrl, app.authenticate())
+    keys = app.authenticate()
+    keyStore.addKey(entityUrl, keys)
 
 
 # Read various public things that don't require auth

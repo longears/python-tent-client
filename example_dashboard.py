@@ -16,15 +16,18 @@ print
 entityUrl = 'https://pythonclienttest.tent.is'
 app = tentapp.TentApp(entityUrl)
 
+
 # Authenticate
 keyStore = tentapp.KeyStore('keystore.js')
-if keyStore.getKey(entityUrl):
-    # reuse auth keys from a previous run
-    app.authenticate(keyStore.getKey(entityUrl))
+keys = keyStore.getKey(entityUrl)
+if keys:
+    # Reuse auth keys from a previous run
+    app.authenticate(keys)
 else:
-    # get auth keys for the first time
+    # Get auth keys for the first time
     # and save them into the keyStore
-    keyStore.addKey(entityUrl, app.authenticate())
+    keys = app.authenticate()
+    keyStore.addKey(entityUrl, keys)
 
 
 # Because we've authenticated, getPosts() will get not only our own public posts
