@@ -125,7 +125,7 @@ class TentApp(object):
         self.url = 'http://zzzzexample.com'
         self.icon = 'http://zzzzexample.com/icon.png'
         self.oauthCallbackUrl = 'http://zzzzexample.com/oauthcallback'
-        self.postNotificationUrl = 'http://zzzzexample.com/notification'
+        self.postNotificationUrl = None # 'http://zzzzexample.com/notification'
 
         #  permissions to request
         self.scopes = {
@@ -350,8 +350,9 @@ class TentApp(object):
             'scope': ','.join(self.scopes.keys()),
             'tent_profile_info_types': 'all',
             'tent_post_types': 'all',
-            'tent_notification_url': self.postNotificationUrl,
         }
+        if self.postNotificationUrl:
+            params['tent_notification_url'] = self.postNotificationUrl
         requestUrl = self.apiRootUrls[0] + '/oauth/authorize'
         urlWithParams = requestUrl + '?' + urlencode(params)
 
