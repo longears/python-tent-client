@@ -205,39 +205,52 @@ class TentApp(object):
     def _discoverAPIUrls(self,entityUrl):
         """set self.apiRootUrls, return None
         """
-        # get self.entityUrl doing just a HEAD request
-        # look in HTTP header for Link: foo; rel="$REL_PROFILE"
-        # TODO: if not, get whole page and look for <link href="foo" rel="$REL_PROFILE" />
-        debugRequest('head request for discovery: %s'%entityUrl)
-        r = requests.head(url=entityUrl)
+        # Get Link headers or <link> pointers and put them in this list
+        profileUrls = []
 
-        # TODO: the requests api here only returns one link even when there are more than one in the
-        # header.  I think it returns the last one, but we should be using the first one.
+        # Get self.entityUrl doing just a HEAD request so we can get Link headers
+        debugRequest('head request for discovery: %s'%entityUrl)
+        r = self.session.head(url=entityUrl)
         try:
-            self.apiRootUrls = [ r.links['https://tent.io/rels/profile']['url'] ]
+            # Look in HTTP header for Link: foo; rel="$REL_PROFILE"
+            # TODO: The requests API here only returns one link even when there are more than one in the
+            #  header.  I think it returns the last one, but we should be using the first one.
+            profileUrls = [ r.links['https://tent.io/rels/profile']['url'] ]
         except KeyError:
-            # no Link header.  have to look in the body for a <link> tag.
+            # No Link header.  Have to look in the body for a <link> tag.
             try:
-                r = requests.get(url=entityUrl)
+                debugRequest('get request for discovery: %s'%entityUrl)
+                r = self.session.get(url=entityUrl)
                 links = r.text.split('<link')[1:]
                 links = [link.split('>')[0] for link in links]
                 links = [link for link in links if 'rel="https://tent.io/rels/profile"' in link]
                 links = [link.split('href="')[1].split('"')[0] for link in links]
-                self.apiRootUrls = links
+                profileUrls = [removeUnicode(link) for link in links]
             except IndexError:
                 1/0 # Failure to find a link.  TODO: better error handling
 
-        # remove trailing "/profile" from urls
-        for ii in range(len(self.apiRootUrls)):
-            self.apiRootUrls[ii] = self.apiRootUrls[ii].replace('/profile','')
-            # convert relative urls to absolute
-            # this assumes they are relative to the entityUrl
-            # this is fragile right now because it assumes the entityUrl doesn't
-            # end with a slash
-            if not self.apiRootUrls[ii].startswith('http'):
-                self.apiRootUrls[ii] = entityUrl + self.apiRootUrls[ii]
+        # Convert relative profile urls to absolute.
+        # This assumes they are relative to the entityUrl.
+        # This is fragile right now because it assumes the entityUrl doesn't end with a slash.
+        for ii in range(len(profileUrls)):
+            if profileUrls[ii].startswith('/'):
+                profileUrls[ii] = entityUrl + profileUrls[ii]
 
-        debugDetail('server api urls = %s'%self.apiRootUrls)
+        debugDetail('profile URLs: %s'%profileUrls)
+
+        # Hit the profile URL to get the official entityUrl and apiRootUrls
+        debugRequest('get request to profile: %s'%profileUrls[0])
+        # Can't use our session here because it has a hardcoded Host header
+        # which points at the original entityUrl.
+        # But now we want to get the profileUrl, which is maybe on a different host.
+        r = requests.get(profileUrls[0],headers=DEFAULT_HEADERS)
+        profile = r.json
+        self.entityUrl = removeUnicode(profile['https://tent.io/types/info/core/v0.1.0']['entity'])
+        self.apiRootUrls = profile['https://tent.io/types/info/core/v0.1.0']['servers']
+        self.apiRootUrls = [removeUnicode(url) for url in self.apiRootUrls]
+
+        debugDetail('apiRootUrls = %s'%self.apiRootUrls)
+        debugDetail('entityUrl = %s'%self.entityUrl)
 
     #------------------------------------
     #--- OAuth

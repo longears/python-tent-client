@@ -8,9 +8,19 @@ import testlib
 import tentapp
 tentapp.debug = False
 
-
 print yellow('-----------------------------------------------------------------------\\')
 testlib.begin('TentApp')
+
+
+#-------------------------------------------------------------------------------------------
+#--- DISCOVERY REDIRECT VIA 3RD PARTY SITE <link> TAGS
+
+originalEntityUrl = 'http://longearstestaccount.tumblr.com/'
+tentIsEntityUrl = 'https://longearstestaccount.tent.is'
+expectedRootUrls = ['https://longearstestaccount.tent.is/tent']
+app = tentapp.TentApp(originalEntityUrl)
+testlib.eq(   app.entityUrl, tentIsEntityUrl, '3rd party redirect via <link> tags should get correct entityUrl'   )
+testlib.eq(   app.apiRootUrls, expectedRootUrls, '3rd party redirect via <link> tags should get correct apiRootUrls'   )
 
 
 #-------------------------------------------------------------------------------------------
