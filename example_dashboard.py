@@ -12,15 +12,20 @@ from colors import *
 print yellow('-----------------------------------------------------------------------\\')
 print
 
-# These are keys for http://pythonclienttest.tent.is
-# Play nice with them.
-keys = {'appID': 'qxtrbu',
-        'mac_key': 'e3d9f4d8133e0f6391387b44b7a99e23',
-        'mac_key_id': 'u:76d9253c'}
 
-app = tentapp.TentApp('https://pythonclienttest.tent.is')
+entityUrl = 'https://pythonclienttest.tent.is'
+app = tentapp.TentApp(entityUrl)
 
-app.authenticate(keys)
+# Authenticate
+keyStore = tentapp.KeyStore('keystore.js')
+if keyStore.getKey(entityUrl):
+    # reuse auth keys from a previous run
+    app.authenticate(keyStore.getKey(entityUrl))
+else:
+    # get auth keys for the first time
+    # and save them into the keyStore
+    keyStore.addKey(entityUrl, app.authenticate())
+
 
 # Because we've authenticated, getPosts() will get not only our own public posts
 # but also those of people we follow and posts that mention us.

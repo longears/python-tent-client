@@ -40,12 +40,45 @@ def debugRaw(s=''):
 def randomString():
     return ''.join([random.choice(string.letters+string.digits) for x in xrange(20)])
 
+def removeUnicode(s):
+    if type(s) == unicode:
+        return s.encode('utf8')
+    return s
+
 #-------------------------------------------------------------------------------------
 #--- CONSTANTS
 
 DEFAULT_HEADERS = {
     'Accept': 'application/vnd.tent.v0+json',
 }
+
+#-------------------------------------------------------------------------------------
+#--- KEYSTORE
+
+class KeyStore(object):
+    def __init__(self,filename):
+        self.filename = filename
+        if os.path.exists(self.filename):
+            self.keys = self._load()
+        else:
+            self.keys = {} # mapping from entityUrl to key dictionaries
+
+    def addKey(self,entityUrl,keys):
+        self.keys[entityUrl] = keys
+        self._save()
+
+    def getKey(self,entityUrl):
+        result = self.keys.get(entityUrl,None)
+        if not result: return None
+        resultNoUnicode = {}
+        for k,v in result.items():
+            resultNoUnicode[removeUnicode(k)] = removeUnicode(v)
+        return resultNoUnicode
+
+    def _save(self):
+        open(self.filename,'w').write(   json.dumps(self.keys, sort_keys=True, indent=4)+'\n'   )
+    def _load(self):
+        return json.loads(   open(self.filename,'r').read()   )
 
 #-------------------------------------------------------------------------------------
 #--- APP
