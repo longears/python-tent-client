@@ -379,7 +379,7 @@ class TentApp(object):
         jsonPayload = {'code':code, 'token_type':'mac'}
 
         # then construct and send the request
-        print
+        debugDetail()
         headers = dict(DEFAULT_HEADERS)
         headers.update({
             'Content-Type': 'application/vnd.tent.v0+json',
@@ -395,13 +395,13 @@ class TentApp(object):
         debugDetail(r.request.data)
 
         # then get the response
-        print
+        debugDetail()
         debugDetail('response headers:')
         debugJson(r.headers)
         debugDetail('response text:')
         debugRaw(r.text)
         if not r.json:
-            print
+            debugDetail()
             debugError('auth failed.')
             return
         debugJson(r.json)
@@ -468,22 +468,22 @@ class TentApp(object):
         
         debugDetail('request headers:')
         debugJson(r.request.headers)
-        print
+        debugDetail()
         debugDetail('request data:')
         debugRaw(r.request.data)
-        print
-        print yellow('  --  --  --  --  --')
-        print
+        debugDetail()
+        debugDetail(' --  --  --  --')
+        debugDetail()
         debugDetail('response headers:')
         debugJson(r.headers)
-        print
+        debugDetail()
         debugDetail('response body:')
         debugRaw(r.text)
-        print
+        debugDetail()
         
         if r.json is None:
             debugError('failed to follow.')
-            print
+            debugDetail()
         return r.json
 
     def getFollowings(self,id=None,**kwargs):
@@ -515,16 +515,16 @@ class TentApp(object):
         
         debugDetail('request headers:')
         debugJson(r.request.headers)
-        print
-        print yellow('  --  --  --  --  --')
-        print
+        debugDetail()
+        debugDetail(' --  --  --  --')
+        debugDetail()
         debugDetail('response headers:')
         debugJson(r.headers)
-        print
+        debugDetail()
         
         if r.status_code is not 200:
             debugError('failed to unfollow.')
-            print
+            debugDetail()
             return False
         return True
         
@@ -573,22 +573,22 @@ class TentApp(object):
 
         debugDetail('request headers:')
         debugJson(r.request.headers)
-        print
+        debugDetail()
         debugDetail('request data:')
         debugRaw(r.request.data)
-        print
-        print yellow('  --  --  --  --  --')
-        print
+        debugDetail()
+        debugDetail(' --  --  --  --')
+        debugDetail()
         debugDetail('response headers:')
         debugJson(r.headers)
-        print
+        debugDetail()
         debugDetail('response body:')
         debugRaw(r.text)
-        print
+        debugDetail()
 
         if r.json is None:
             debugError('failed to put post.')
-            print
+            debugDetail()
         return r.json
 
     def getPosts(self,id=None,**kwargs):

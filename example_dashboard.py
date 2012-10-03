@@ -35,8 +35,8 @@ else:
 # tent.is limits this to the last 50 posts or so unless additional parameters are present
 posts = app.getPosts()
 
-# sort oldest first
-posts.sort(key = lambda p: p['published_at'])
+# # if you wanted to sort oldest first:
+# posts.sort(key = lambda p: p['published_at'])
 
 for post in posts:
     if post['type'] == 'https://tent.io/types/post/status/v0.1.0':
