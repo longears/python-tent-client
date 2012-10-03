@@ -40,6 +40,12 @@ def debugRaw(s=''):
 def randomString():
     return ''.join([random.choice(string.letters+string.digits) for x in xrange(20)])
 
+#-------------------------------------------------------------------------------------
+#--- CONSTANTS
+
+DEFAULT_HEADERS = {
+    'Accept': 'application/vnd.tent.v0+json',
+}
 
 #-------------------------------------------------------------------------------------
 #--- APP
@@ -147,15 +153,21 @@ class TentApp(object):
         if entityUrl is None:
             raise "entityUrl was not set in the constructor or the config file"
 
+        # set up default headers for the session
+        headers = DEFAULT_HEADERS
+        headers.update({
+            'Host':urlparse(self.serverDiscoveryUrl).netloc
+        })
+
         # prepare a session for doing requests
         if self.isAuthenticated():
             # if we already have keys from the config file, set up auth now
             debugDetail('building auth session')
-            self.session = requests.session(hooks={"pre_request": self._authHook})
+            self.session = requests.session(hooks={"pre_request": self._authHook}, headers=headers)
         else:
             # if we don't have auth keys, make a non-auth session.
             # if oauthRegister is run later, this session will be replaced with a session that does authentication
-            self.session = requests.session()
+            self.session = requests.session(headers=headers)
 
         # this list of api roots will be filled in by _discoverAPIurls()
         self.apiRootUrls = []
@@ -260,10 +272,13 @@ class TentApp(object):
         }
         debugJson(appInfoJson)
 
-        headers = {
+        # set up default headers for the session
+        headers = DEFAULT_HEADERS
+        headers.update({
             'Content-Type': 'application/vnd.tent.v0+json',
-            'Accept': 'application/vnd.tent.v0+json',
-        }
+            'Host':urlparse(self.serverDiscoveryUrl).netloc
+        })
+
         requestUrl = self.apiRootUrls[0] + '/apps'
         debugRequest('posting to %s'%requestUrl)
         r = requests.post(requestUrl, data=json.dumps(appInfoJson), headers=headers)
@@ -290,7 +305,11 @@ class TentApp(object):
         # set up a new session that uses MAC authentication
         # this will be used for all future requests
         debugDetail('building auth session')
-        self.session = requests.session(hooks={"pre_request": self._authHook})
+
+        # remove the 'Content-Type' header from headers, as it's not needed for all request types
+        del headers['Content-Type']
+
+        self.session = requests.session(hooks={"pre_request": self._authHook}, headers=headers)
 
     def oauthRegister(self):
         """Register this app with the server.
@@ -350,10 +369,9 @@ class TentApp(object):
 
         # then construct and send the request
         print
-        headers = {
+        headers.update({
             'Content-Type': 'application/vnd.tent.v0+json',
-            'Accept': 'application/vnd.tent.v0+json',
-        }
+        })
         requestUrl = self.apiRootUrls[0] + resource
         debugRequest('posting to: %s'%requestUrl)
         r = self.session.post(requestUrl, data=json.dumps(jsonPayload), headers=headers)
@@ -392,9 +410,8 @@ class TentApp(object):
         """Do a get request using the provided kwargs as request parameters.
         """
         requestUrl = self.apiRootUrls[0] + resource
-        headers = {'Accept': 'application/vnd.tent.v0+json'}
         debugRequest(requestUrl)
-        r = self.session.get(requestUrl,headers=headers,params=kwargs)
+        r = self.session.get(requestUrl,params=kwargs)
         if r.json is None:
             debugError('not json.  here is the actual body text:')
             debugRaw(r.text)
@@ -426,10 +443,10 @@ class TentApp(object):
 
         resource = '/followings'
         requestUrl = self.apiRootUrls[0] + resource
-        headers = {
+        headers = DEFAULT_HEADERS
+        headers.update({
             'Content-Type': 'application/vnd.tent.v0+json',
-            'Accept': 'application/vnd.tent.v0+json',
-        }
+        })
         debugRequest('following via: %s'%requestUrl)
         r = self.session.post(requestUrl, data=json.dumps({'entity':entityUrl}), headers=headers)
         
@@ -477,11 +494,8 @@ class TentApp(object):
         debugMain('unfollow')
         resource = '/followings/%s'%id
         requestUrl = self.apiRootUrls[0] + resource
-        headers = {
-            'Accept': 'application/vnd.tent.v0+json',
-        }
         debugRequest('unfollowing: %s'%requestUrl)
-        r = self.session.delete(requestUrl, headers=headers)
+        r = self.session.delete(requestUrl)
         
         debugDetail('request headers:')
         debugJson(r.request.headers)
@@ -534,12 +548,10 @@ class TentApp(object):
 
         resource = '/posts'
         requestUrl = self.apiRootUrls[0] + resource
-        host_header = urlparse(self.apiRootUrls[0]).netloc
-        headers = {
+        headers = DEFAULT_HEADERS
+        headers.update({
             'Content-Type': 'application/vnd.tent.v0+json',
-            'Accept': 'application/vnd.tent.v0+json',
-            'Host': host_header
-        }
+        })
         debugRequest('posting to: %s'%requestUrl)
         r = self.session.post(requestUrl, data=json.dumps(post), headers=headers)
 
