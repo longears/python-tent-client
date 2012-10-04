@@ -184,6 +184,7 @@ class TentApp(object):
         })
         self.session = requests.session(hooks={"pre_request": self._authHook}, headers=headers)
 
+
     #------------------------------------
     #--- misc helpers
 
@@ -198,6 +199,7 @@ class TentApp(object):
         if self.isAuthenticated():
             macauthlib.sign_request(req, id=self.mac_key_id, key=self.mac_key, hashmod=hashlib.sha256)
         return req
+
 
     #------------------------------------
     #--- server discovery
@@ -251,6 +253,7 @@ class TentApp(object):
 
         debugDetail('apiRootUrls = %s'%self.apiRootUrls)
         debugDetail('entityUrl = %s'%self.entityUrl)
+
 
     #------------------------------------
     #--- OAuth
@@ -419,6 +422,7 @@ class TentApp(object):
             'mac_key': self.mac_key,
         }
         
+
     #------------------------------------
     #--- API methods
 
@@ -528,7 +532,6 @@ class TentApp(object):
             return False
         return True
         
-
     def getFollowers(self,id=None,**kwargs):
         """Get the entities who are following you.
         Any additional keyword arguments will be passed to the server as request parameters.
@@ -620,6 +623,44 @@ class TentApp(object):
         pass
 
 
+    #------------------------------------
+    #--- generators
 
+    def _genericGenerator(self,method,**kwargs):
+        oldestIdSoFar = None
+        while True:
+            if oldestIdSoFar is None:
+                items = method(**kwargs)
+            else:
+                items = method(before_id=oldestIdSoFar,**kwargs)
+            if not items:
+                return
+            for item in items:
+                yield item
+                oldestIdSoFar = item['id']
+
+    def generatePosts(self,**kwargs):
+        """Return a generator which iterates through all of the user's followers,
+        newest first, making multiple GET requests behind the scenes.
+        BUG: don't use the **kwargs because if any other params are present,
+         tentd will ignore the before_id param which is used for pagination
+        """
+        kwargs = {} # HACK: disable kwargs until tentd bug is fixed.
+        for f in self._genericGenerator(self.getPosts,**kwargs):
+            yield f
+
+    def generateFollowings(self):
+        """Return a generator which iterates through all of the user's followers,
+        newest first, making multiple GET requests behind the scenes.
+        """
+        for f in self._genericGenerator(self.getFollowings):
+            yield f
+
+    def generateFollowers(self):
+        """Return a generator which iterates through all of the user's followers,
+        newest first, making multiple GET requests behind the scenes.
+        """
+        for f in self._genericGenerator(self.getFollowers):
+            yield f
 
 

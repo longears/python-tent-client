@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from __future__ import division
-import pprint, time
+import pprint, time, sys, json
 from colors import *
 import testlib
 
@@ -36,6 +36,11 @@ testlib.eq(    app.isAuthenticated(), False, 'when starting, should not be authe
 aFollower = app.getFollowers()[0]
 testlib.eq(    'groups' in aFollower, False, 'non-authenticated GET /followers should not have "groups"'   )
 
+# Generators with no authentication
+testlib.eq(   len(list(app.generateFollowers())) >= 1, True, 'generateFollowers should return at least one item'   )
+testlib.eq(   len(list(app.generateFollowings())) >= 1, True, 'generateFollowings should return at least one item'   )
+testlib.eq(   len(list(app.generatePosts())) >= 1, True, 'generatePosts should return at least one item'   )
+
 # Authenticate
 # You can use your own database here instead of KeyStore if you want.
 # KeyStore just saves the keys to a local JSON file.
@@ -52,6 +57,20 @@ testlib.eq(    app.isAuthenticated(), True, 'authenticate() should affect isAuth
 
 aFollower = app.getFollowers()[0]
 testlib.eq(    'groups' in aFollower, True, 'authenticated GET /followers should have "groups"'   )
+
+# Generators with authentication
+testlib.eq(   len(list(app.generateFollowers())) >= 1, True, 'generateFollowers should return at least one item'   )
+testlib.eq(   len(list(app.generateFollowings())) >= 1, True, 'generateFollowings should return at least one item'   )
+testlib.eq(   len(list(app.generatePosts())) >= 1, True, 'generatePosts should return at least one item'   )
+
+# # A test case for the tend bug which causes the before_id param to be ignored 
+# # if there are other params like post_types or entity, which results in the
+# # same items being generated forever
+# print
+# for post in app.generatePosts(post_types='https://tent.io/types/post/status/v0.1.0'):
+# # for post in app.generatePosts(entity='https://tent.tent.is'):
+#     timestamp = time.asctime(time.localtime(  post['published_at']  ))
+#     print cyan('%s  %s %s'%(post['id'],timestamp,post['entity']))
 
 
 # post a status and then get it back
