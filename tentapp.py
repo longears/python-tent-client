@@ -642,12 +642,18 @@ class TentApp(object):
     def generatePosts(self,**kwargs):
         """Return a generator which iterates through all of the user's followers,
         newest first, making multiple GET requests behind the scenes.
-        BUG: don't use the **kwargs because if any other params are present,
-         tentd will ignore the before_id param which is used for pagination
         """
-        kwargs = {} # HACK: disable kwargs until tentd bug is fixed.
-        for f in self._genericGenerator(self.getPosts,**kwargs):
-            yield f
+        oldestTimeSoFar = None
+        while True:
+            if oldestTimeSoFar is None:
+                items = self.getPosts(**kwargs)
+            else:
+                items = self.getPosts(before_time=oldestTimeSoFar,**kwargs)
+            if not items:
+                return
+            for item in items:
+                yield item
+                oldestTimeSoFar = item['published_at']
 
     def generateFollowings(self):
         """Return a generator which iterates through all of the user's followers,

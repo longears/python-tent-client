@@ -13,17 +13,6 @@ testlib.begin('TentApp')
 
 
 #-------------------------------------------------------------------------------------------
-#--- DISCOVERY REDIRECT VIA 3RD PARTY SITE <link> TAGS
-
-originalEntityUrl = 'http://longearstestaccount.tumblr.com/'
-tentIsEntityUrl = 'https://longearstestaccount.tent.is'
-expectedRootUrls = ['https://longearstestaccount.tent.is/tent']
-app = tentapp.TentApp(originalEntityUrl)
-testlib.eq(   app.entityUrl, tentIsEntityUrl, '3rd party redirect via <link> tags should get correct entityUrl'   )
-testlib.eq(   app.apiRootUrls, expectedRootUrls, '3rd party redirect via <link> tags should get correct apiRootUrls'   )
-
-
-#-------------------------------------------------------------------------------------------
 #--- AUTHENTICATION
 
 entityUrl = 'https://pythonclienttest.tent.is'
@@ -63,15 +52,12 @@ testlib.eq(   len(list(app.generateFollowers())) >= 1, True, 'generateFollowers 
 testlib.eq(   len(list(app.generateFollowings())) >= 1, True, 'generateFollowings should return at least one item'   )
 testlib.eq(   len(list(app.generatePosts())) >= 1, True, 'generatePosts should return at least one item'   )
 
-# # A test case for the tend bug which causes the before_id param to be ignored 
-# # if there are other params like post_types or entity, which results in the
-# # same items being generated forever
 # print
-# for post in app.generatePosts(post_types='https://tent.io/types/post/status/v0.1.0'):
+# for post in app.generatePosts():
+# # for post in app.generatePosts(post_types='https://tent.io/types/post/status/v0.1.0'):
 # # for post in app.generatePosts(entity='https://tent.tent.is'):
 #     timestamp = time.asctime(time.localtime(  post['published_at']  ))
 #     print cyan('%s  %s %s'%(post['id'],timestamp,post['entity']))
-
 
 # post a status and then get it back
 text = "This is a test message from python-tent-client's test_tentapp.py.  The time is %s"%int(time.time())
@@ -95,6 +81,17 @@ for post in posts:
         if post['content']['text'] == text:
             success = True
 testlib.eq(   success, True, 'should be able to post a status and then get it back'   )
+
+
+#-------------------------------------------------------------------------------------------
+#--- DISCOVERY REDIRECT VIA 3RD PARTY SITE <link> TAGS
+
+originalEntityUrl = 'http://longearstestaccount.tumblr.com/'
+tentIsEntityUrl = 'https://longearstestaccount.tent.is'
+expectedRootUrls = ['https://longearstestaccount.tent.is/tent']
+app = tentapp.TentApp(originalEntityUrl)
+testlib.eq(   app.entityUrl, tentIsEntityUrl, '3rd party redirect via <link> tags should get correct entityUrl'   )
+testlib.eq(   app.apiRootUrls, expectedRootUrls, '3rd party redirect via <link> tags should get correct apiRootUrls'   )
 
 
 #-------------------------------------------------------------------------------------------
