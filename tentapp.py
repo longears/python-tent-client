@@ -456,7 +456,6 @@ class TentApp(object):
         """Begin following the given entity.
         Note that unlike the other follow-related methods, this one uses an entity URL
         instead of an id.
-        TODO: not implemented yet.
         """
         # POST /followings
         debugMain('follow')
@@ -508,7 +507,6 @@ class TentApp(object):
     def unfollow(self,id):
         """Unfollow an entity.
         To get the id, you should first call followings() to get a list of entities and their ids.
-        TODO: not implemented yet.
         """
         # DELETE /followings/$id
         debugMain('unfollow')
