@@ -7,11 +7,12 @@ import os
 import pprint
 import string
 import hashlib
+import hmac
+from base64 import b64encode
 import json
 import requests
 import webbrowser
-import macauthlib
-from urllib import urlencode
+from urllib import urlencode, quote
 from urlparse import urlparse
 from colors import *
 
@@ -197,9 +198,53 @@ class TentApp(object):
         debugAuth('auth hook. mac key id: %s'%repr(self.mac_key_id))
         debugAuth('auth hook. mac key: %s'%repr(self.mac_key))
         if self.isAuthenticated():
-            macauthlib.sign_request(req, id=self.mac_key_id, key=self.mac_key, hashmod=hashlib.sha256)
+            parse = urlparse(req.full_url)
+            port = "80"
+            if parse.scheme == "https": port = "443"
+            authheader = self.getHmacSha256AuthHeader(mac_key_id=self.mac_key_id, mac_key=self.mac_key, method=req.method, resource=parse.path+parse.query, hostname=parse.hostname, port=port)
+            req.headers.update({'Authorization': authheader})
         return req
 
+    def getHmacSha256AuthHeader(self,mac_key_id,mac_key,method,resource,hostname,port,ext=None):
+        """Return an authentication header per 
+        http://tools.ietf.org/html/draft-ietf-oauth-v2-http-mac-01
+        """
+        debugMain('HMAC SHA 256')
+        debugDetail('mac key id: %s'%repr(mac_key_id))
+        debugDetail('mac key: %s'%repr(mac_key))
+
+        timestamp = int(time.time())
+        nonce = randomString()
+
+        msgLines = []
+        msgLines.append(str(timestamp))
+        msgLines.append(nonce)
+        msgLines.append(method)
+        msgLines.append(resource)
+        msgLines.append(hostname)
+        msgLines.append(str(port))
+        if ext:
+            msgLines.append(ext)
+            msg = '\n'.join(msgLines) + '\n'
+        else:
+            msg = '\n'.join(msgLines) + '\n\n'
+        debugDetail('input to hash: '+repr(msg))
+        debugRaw(msg)
+        
+        if type(mac_key) == unicode: mac_key = mac_key.encode('utf8')
+        if type(msg) == unicode: msg = msg.encode('utf8')
+        
+        digest = hmac.new(mac_key,msg,hashlib.sha256).digest()
+        mac = b64encode(digest).decode() # this produces unicode for some reason
+        mac = mac.encode('utf8') # convert from unicode to string
+        authHeader = 'MAC id="' + mac_key_id + '", '
+        authHeader += 'ts="' + str(timestamp) + '", '
+        authHeader += 'nonce="' + nonce + '", '
+        authHeader += 'mac="' + mac + '"'
+        debugDetail('auth header:')
+        debugRaw(authHeader)
+        if type(authHeader) == unicode: authHeader = authHeader.encode('utf8')
+        return authHeader
 
     #------------------------------------
     #--- server discovery
@@ -362,6 +407,8 @@ class TentApp(object):
         print '---------------------------------------------------------\\'
         print
         print 'Opening web browser so you can grant access on your tent server.'
+        print
+        print 'URL: %s'%urlWithParams
         print
         print 'After you grant access, your browser will be redirected to'
         print 'a nonexistant page.  Look in the url and find the "code"'
