@@ -46,6 +46,28 @@ def removeUnicode(s):
         return s.encode('utf8')
     return s
 
+def buildHmacSha256AuthHeader(mac_key_id,mac_key,method,resource,hostname,port):
+    """Return an authentication header as per 
+    http://tools.ietf.org/html/draft-ietf-oauth-v2-http-mac-01
+    """
+    debugMain('HMAC SHA 256')
+    debugDetail('mac key id: %s'%repr(mac_key_id))
+    debugDetail('mac key: %s'%repr(mac_key))
+
+    timestamp = int(time.time())
+    nonce = randomString()
+
+    msg = '\n'.join([str(timestamp), nonce, method, resource, hostname, str(port), '', ''])
+    debugDetail('input to hash: '+repr(msg))
+    debugRaw(msg)
+   
+    digest = hmac.new(removeUnicode(mac_key),removeUnicode(msg),hashlib.sha256).digest()
+    mac = removeUnicode(b64encode(digest).decode()) # this produces unicode for some reason
+    authHeader = 'MAC id="%s" ts="%s" nonce="%s" mac="%s"'%(removeUnicode(mac_key_id), timestamp, nonce, mac)
+    debugDetail('auth header:')
+    debugRaw(authHeader)
+    return authHeader
+
 #-------------------------------------------------------------------------------------
 #--- CONSTANTS
 
@@ -198,53 +220,18 @@ class TentApp(object):
         debugAuth('auth hook. mac key id: %s'%repr(self.mac_key_id))
         debugAuth('auth hook. mac key: %s'%repr(self.mac_key))
         if self.isAuthenticated():
-            parse = urlparse(req.full_url)
-            port = "80"
-            if parse.scheme == "https": port = "443"
-            authheader = self.getHmacSha256AuthHeader(mac_key_id=self.mac_key_id, mac_key=self.mac_key, method=req.method, resource=parse.path+parse.query, hostname=parse.hostname, port=port)
-            req.headers.update({'Authorization': authheader})
+            parsed = urlparse(req.full_url)
+            port = 80
+            if parsed.scheme == "https": port = 443
+            resource = parsed.path
+            if parsed.query: resource = parsed.path + '?' + parsed.query
+            req.headers['Authorization'] = buildHmacSha256AuthHeader(mac_key_id = self.mac_key_id,
+                                                                     mac_key = self.mac_key,
+                                                                     method = req.method,
+                                                                     resource = resource,
+                                                                     hostname = parsed.hostname,
+                                                                     port = port)
         return req
-
-    def getHmacSha256AuthHeader(self,mac_key_id,mac_key,method,resource,hostname,port,ext=None):
-        """Return an authentication header per 
-        http://tools.ietf.org/html/draft-ietf-oauth-v2-http-mac-01
-        """
-        debugMain('HMAC SHA 256')
-        debugDetail('mac key id: %s'%repr(mac_key_id))
-        debugDetail('mac key: %s'%repr(mac_key))
-
-        timestamp = int(time.time())
-        nonce = randomString()
-
-        msgLines = []
-        msgLines.append(str(timestamp))
-        msgLines.append(nonce)
-        msgLines.append(method)
-        msgLines.append(resource)
-        msgLines.append(hostname)
-        msgLines.append(str(port))
-        if ext:
-            msgLines.append(ext)
-            msg = '\n'.join(msgLines) + '\n'
-        else:
-            msg = '\n'.join(msgLines) + '\n\n'
-        debugDetail('input to hash: '+repr(msg))
-        debugRaw(msg)
-        
-        if type(mac_key) == unicode: mac_key = mac_key.encode('utf8')
-        if type(msg) == unicode: msg = msg.encode('utf8')
-        
-        digest = hmac.new(mac_key,msg,hashlib.sha256).digest()
-        mac = b64encode(digest).decode() # this produces unicode for some reason
-        mac = mac.encode('utf8') # convert from unicode to string
-        authHeader = 'MAC id="' + mac_key_id + '", '
-        authHeader += 'ts="' + str(timestamp) + '", '
-        authHeader += 'nonce="' + nonce + '", '
-        authHeader += 'mac="' + mac + '"'
-        debugDetail('auth header:')
-        debugRaw(authHeader)
-        if type(authHeader) == unicode: authHeader = authHeader.encode('utf8')
-        return authHeader
 
     #------------------------------------
     #--- server discovery

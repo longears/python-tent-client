@@ -52,6 +52,7 @@ testlib.eq(   len(list(app.generateFollowers())) >= 1, True, 'generateFollowers 
 testlib.eq(   len(list(app.generateFollowings())) >= 1, True, 'generateFollowings should return at least one item'   )
 testlib.eq(   len(list(app.generatePosts())) >= 1, True, 'generatePosts should return at least one item'   )
 
+# # Test generatePosts in a visual way
 # print
 # for post in app.generatePosts():
 # # for post in app.generatePosts(post_types='https://tent.io/types/post/status/v0.1.0'):
