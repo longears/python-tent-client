@@ -620,13 +620,15 @@ class TentApp(object):
         tent.is limits this to the last 50 posts or so unless additional parameters are present.
         Any additional keyword arguments will be passed to the server as request parameters.
         These ones are supported by tentd:
-            limit           Max number to return; default to the max of 50
+            limit             Max number to return; default to the max of 50
             before_id
             since_id
-            before_time     Time should be an integer in Unix epoch format
+            before_id_entity  Use this if the before_id is not from one of your own posts
+            since_id_entity   Use this if the since_id is not from one of your own posts
+            before_time       Time should be an integer in Unix epoch format
             since_time
-            entity          Posts published by the specified entity
-            post_types      Filter down to these posts types (comma-separated type URIs)
+            entity            Posts published by the specified entity
+            post_types        Filter down to these posts types (comma-separated type URIs)
         """
         # GET /posts  [/$id]
         debugMain('getPosts')
