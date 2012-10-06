@@ -190,9 +190,7 @@ class TentApp(object):
         # we don't have auth keys yet, so make a non-auth session.
         # if authenticate is run later, this session will be replaced with a session that does authentication
         headers = dict(DEFAULT_HEADERS)
-        headers.update({
-            'Host':urlparse(self.entityUrl).netloc
-        })
+        headers['Host'] = urlparse(self.entityUrl).netloc
         self.session = requests.session(hooks={"pre_request": self._authHook}, headers=headers)
 
         # this list of api roots will be filled in by _discoverAPIurls()
@@ -202,9 +200,7 @@ class TentApp(object):
         # now that we've run discovery, the entityUrl might have changed
         # so we have to make a new session again.
         headers = dict(DEFAULT_HEADERS)
-        headers.update({
-            'Host':urlparse(self.entityUrl).netloc
-        })
+        headers['Host'] = urlparse(self.entityUrl).netloc
         self.session = requests.session(hooks={"pre_request": self._authHook}, headers=headers)
 
 
@@ -308,9 +304,7 @@ class TentApp(object):
 
         # set up default headers for the session
         headers = dict(DEFAULT_HEADERS)
-        headers.update({
-            'Content-Type': 'application/vnd.tent.v0+json',
-        })
+        headers['Content-Type'] = 'application/vnd.tent.v0+json'
 
         requestUrl = self.apiRootUrls[0] + '/apps'
         debugRequest('posting to %s'%requestUrl)
@@ -418,9 +412,7 @@ class TentApp(object):
         # then construct and send the request
         debugDetail()
         headers = dict(DEFAULT_HEADERS)
-        headers.update({
-            'Content-Type': 'application/vnd.tent.v0+json',
-        })
+        headers['Content-Type'] = 'application/vnd.tent.v0+json'
         requestUrl = self.apiRootUrls[0] + resource
         debugRequest('posting to: %s'%requestUrl)
         r = self.session.post(requestUrl, data=json.dumps(jsonPayload), headers=headers)
@@ -497,9 +489,7 @@ class TentApp(object):
         resource = '/followings'
         requestUrl = self.apiRootUrls[0] + resource
         headers = dict(DEFAULT_HEADERS)
-        headers.update({
-            'Content-Type': 'application/vnd.tent.v0+json',
-        })
+        headers['Content-Type'] = 'application/vnd.tent.v0+json'
         debugRequest('following via: %s'%requestUrl)
         r = self.session.post(requestUrl, data=json.dumps({'entity':entityUrl}), headers=headers)
         
@@ -600,9 +590,7 @@ class TentApp(object):
         resource = '/posts'
         requestUrl = self.apiRootUrls[0] + resource
         headers = dict(DEFAULT_HEADERS)
-        headers.update({
-            'Content-Type': 'application/vnd.tent.v0+json',
-        })
+        headers['Content-Type'] = 'application/vnd.tent.v0+json'
         debugRequest('posting to: %s'%requestUrl)
         r = self.session.post(requestUrl, data=json.dumps(post), headers=headers)
 
