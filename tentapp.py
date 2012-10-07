@@ -16,12 +16,14 @@ from urllib import urlencode, quote
 from urlparse import urlparse
 from colors import *
 
+requests.defaults.defaults['danger_mode'] = True
 
 #-------------------------------------------------------------------------------------
 #--- UTILS
 
 # Set this to True to get a ton of debugging info printed to the screen
 debug = False
+retries = 5
 
 def debugAuth(s=''):
     if debug: print blue('%s'%s)
@@ -67,6 +69,15 @@ def buildHmacSha256AuthHeader(mac_key_id,mac_key,method,resource,hostname,port):
     debugDetail('auth header:')
     debugRaw(authHeader)
     return authHeader
+
+def retry(method,*args,**kwargs):
+    for ii in range(retries):
+        try:
+            return method(*args,**kwargs)
+        except requests.exceptions.HTTPError:
+            debugError('http error.  retrying... (that was attempt %s of %s)'%(ii,retries))
+    print 'tried too many times'
+    1/0 # TODO: better error handling
 
 #-------------------------------------------------------------------------------------
 #--- CONSTANTS
@@ -240,7 +251,7 @@ class TentApp(object):
 
         # Get self.entityUrl doing just a HEAD request so we can get Link headers
         debugRequest('head request for discovery: %s'%entityUrl)
-        r = self.session.head(url=entityUrl)
+        r = retry(self.session.head,url=entityUrl)
         try:
             # Look in HTTP header for Link: foo; rel="$REL_PROFILE"
             # TODO: The requests API here only returns one link even when there are more than one in the
@@ -250,7 +261,7 @@ class TentApp(object):
             # No Link header.  Have to look in the body for a <link> tag.
             try:
                 debugRequest('get request for discovery: %s'%entityUrl)
-                r = self.session.get(url=entityUrl)
+                r = retry(self.session.get,url=entityUrl)
                 links = r.text.split('<link')[1:]
                 links = [link.split('>')[0] for link in links]
                 links = [link for link in links if 'rel="https://tent.io/rels/profile"' in link]
@@ -273,7 +284,7 @@ class TentApp(object):
         # Can't use our session here because it has a hardcoded Host header
         # which points at the original entityUrl.
         # But now we want to get the profileUrl, which is maybe on a different host.
-        r = requests.get(profileUrls[0],headers=DEFAULT_HEADERS)
+        r = retry(requests.get,profileUrls[0],headers=DEFAULT_HEADERS)
         profile = r.json
         self.entityUrl = removeUnicode(profile['https://tent.io/types/info/core/v0.1.0']['entity'])
         self.apiRootUrls = profile['https://tent.io/types/info/core/v0.1.0']['servers']
@@ -308,7 +319,7 @@ class TentApp(object):
 
         requestUrl = self.apiRootUrls[0] + '/apps'
         debugRequest('posting to %s'%requestUrl)
-        r = requests.post(requestUrl, data=json.dumps(appInfoJson), headers=headers)
+        r = retry(requests.post, requestUrl, data=json.dumps(appInfoJson), headers=headers)
 
         # get oauth key in response
         debugDetail('headers from server:')
@@ -415,7 +426,7 @@ class TentApp(object):
         headers['Content-Type'] = 'application/vnd.tent.v0+json'
         requestUrl = self.apiRootUrls[0] + resource
         debugRequest('posting to: %s'%requestUrl)
-        r = self.session.post(requestUrl, data=json.dumps(jsonPayload), headers=headers)
+        r = retry(self.session.post, requestUrl, data=json.dumps(jsonPayload), headers=headers)
 
         # display our request
         debugDetail('request headers:')
@@ -457,7 +468,7 @@ class TentApp(object):
         """
         requestUrl = self.apiRootUrls[0] + resource
         debugRequest(requestUrl)
-        r = self.session.get(requestUrl,params=kwargs)
+        r = retry(self.session.get,requestUrl,params=kwargs)
         if r.json is None:
             debugError('not json.  here is the actual body text:')
             debugRaw(r.text)
@@ -491,7 +502,7 @@ class TentApp(object):
         headers = dict(DEFAULT_HEADERS)
         headers['Content-Type'] = 'application/vnd.tent.v0+json'
         debugRequest('following via: %s'%requestUrl)
-        r = self.session.post(requestUrl, data=json.dumps({'entity':entityUrl}), headers=headers)
+        r = retry(self.session.post, requestUrl, data=json.dumps({'entity':entityUrl}), headers=headers)
         
         debugDetail('request headers:')
         debugJson(r.request.headers)
@@ -592,7 +603,7 @@ class TentApp(object):
         headers = dict(DEFAULT_HEADERS)
         headers['Content-Type'] = 'application/vnd.tent.v0+json'
         debugRequest('posting to: %s'%requestUrl)
-        r = self.session.post(requestUrl, data=json.dumps(post), headers=headers)
+        r = retry(self.session.post, requestUrl, data=json.dumps(post), headers=headers)
 
         debugDetail('request headers:')
         debugJson(r.request.headers)
