@@ -23,7 +23,7 @@ requests.defaults.defaults['danger_mode'] = True
 
 # Set this to True to get a ton of debugging info printed to the screen
 debug = False
-retries = 5
+retries = 10
 
 def debugAuth(s=''):
     if debug: print blue('%s'%s)
@@ -76,6 +76,9 @@ def retry(method,*args,**kwargs):
             return method(*args,**kwargs)
         except requests.exceptions.HTTPError:
             debugError('http error.  retrying... (that was attempt %s of %s)'%(ii,retries))
+        except requests.exceptions.ConnectionError:
+            debugError('connection error.  retrying... (that was attempt %s of %s)'%(ii,retries))
+        time.sleep(1)
     print 'tried too many times'
     1/0 # TODO: better error handling
 
@@ -671,6 +674,7 @@ class TentApp(object):
             for item in items:
                 yield item
                 oldestIdSoFar = item['id']
+            time.sleep(0.5)
 
     def generatePosts(self,**kwargs):
         """Return a generator which iterates through all of the user's followers,
@@ -687,6 +691,7 @@ class TentApp(object):
             for item in items:
                 yield item
                 oldestTimeSoFar = item['published_at']
+            time.sleep(0.5)
 
     def generateFollowings(self):
         """Return a generator which iterates through all of the user's followers,
