@@ -157,16 +157,14 @@ class TentApp(object):
 
         self.entityUrl = entityUrl
 
-        # details of this app
-        #  basic
-        self.name = 'python-tent-client 2'
-        self.description = 'description of my test app'
-
-        #  urls
-        self.url = 'http://zzzzexample.com'
-        self.icon = 'http://zzzzexample.com/icon.png'
-        self.oauthCallbackUrl = 'http://zzzzexample.com/oauthcallback'
-        self.postNotificationUrl = None # 'http://zzzzexample.com/notification'
+        self.appDetails = {
+            'name': 'python-tent-client',
+            'description': 'description of my app',
+            'url': 'http://zzzzexample.com',
+            'icon': 'http://zzzzexample.com/icon.png',
+            'oauthCallbackURL': 'http://zzzzexample.com/oauthcallback',
+            'postNotificationUrl': None,
+        }
 
         #  permissions to request
         self.scopes = {
@@ -348,12 +346,12 @@ class TentApp(object):
 
         # describe ourself to the server
         appInfoJson = {
-            'name': self.name,
-            'description': self.description,
-            'url': self.url,
-            'icon': 'http://example.com/icon.png',
-            'redirect_uris': [self.oauthCallbackUrl],
-            'scopes': self.scopes
+            'name': self.appDetails['name'],
+            'description': self.appDetails['description'],
+            'url': self.appDetails['url'],
+            'icon': self.appDetails['icon'],
+            'redirect_uris': [self.appDetails['oauthCallbackURL']],
+            'scopes': self.scopes,
         }
         debugJson(appInfoJson)
 
@@ -384,7 +382,7 @@ class TentApp(object):
     def getUserApprovalURL(self):
         """Return a URL on the user's tent server that the user should visit
         to approve this app.  After approval the user will be redirected
-        back to self.oauthCallbackUrl
+        back to self.appDetails['oauthCallbackURL']
 
         Preconditions: app is registered already, aka self.hasRegistrationKeys()
         Preconditions for self.keys: appID, registration_mac_*
@@ -402,14 +400,14 @@ class TentApp(object):
         # we will get the "code" in response
         params = {
             'client_id': self.keys['appID'],
-            'redirect_uri': self.oauthCallbackUrl,
+            'redirect_uri': self.appDetails['oauthCallbackURL'],
             'state': self.keys['state'],
             'scope': ','.join(self.scopes.keys()),
             'tent_profile_info_types': 'all',
             'tent_post_types': 'all',
         }
-        if self.postNotificationUrl:
-            params['tent_notification_url'] = self.postNotificationUrl
+        if self.appDetails.get('postNotificationURL',None):
+            params['tent_notification_url'] = self.appDetails['postNotificationUrl']
         debugJson(params)
         requestUrl = self.apiRootUrls[0] + '/oauth/authorize'
         urlWithParams = requestUrl + '?' + urlencode(params)
@@ -419,7 +417,7 @@ class TentApp(object):
 
     def getPermanentKeys(self,code,state=None):
         """After the user has approved the app at their tent server, they'll be redirected
-        to self.oauthCallbackUrl with a code and state provided by the tent server.
+        to self.appDetails['oauthCallbackURL'] with a code and state provided by the tent server.
         Obtain those values and call this method to get permanent keys.
         State is optional.  If you provide it, it will be checked against the state we sent
         to the tent server in the first place.  If you omit it, that check will not be performed.
@@ -749,10 +747,10 @@ class TentApp(object):
         keyStore = KeyStore(keyStoreFilename)
         self.keys = keyStore.get(self.entityUrl, {})
 
-        # Set our URL that the Tent server will send users to
-        # after they approve us.
-        # This must be set before registering.
-        self.oauthCallbackUrl = 'http://zzzzexample.com/oauthcallback'
+        # Note that self.appDetails['oauthCallbackURL'] must be set before registering.
+        # This is an URL for our app that the Tent server will redirect users to after
+        # they approve our app.
+        #     self.appDetails['oauthCallbackURL'] = 'http://zzzzexample.com/oauthcallback'
 
         # If the app has never been registered with the server, register now
         if not self.hasRegistrationKeys():

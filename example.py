@@ -22,6 +22,17 @@ entityUrl = 'https://pythonclienttest.tent.is'
 app = tentapp.TentApp(entityUrl)
 
 
+# set up the details for our app before we register it with the server
+app.appDetails = {
+    'name': 'python-tent-client example',
+    'description': 'description of my app',
+    'url': 'http://zzzzexample.com',
+    'icon': 'http://zzzzexample.com/icon.png',
+    'oauthCallbackURL': 'http://zzzzexample.com/oauthcallback',
+    'postNotificationUrl': None,
+}
+
+
 #=== AUTHENTICATION BEGIN ===
 # You can comment out all of this auth code if you're only
 # using publicly available API methods
@@ -34,11 +45,6 @@ app = tentapp.TentApp(entityUrl)
 # Load auth keys from disk if they've been previously saved
 keyStore = tentapp.KeyStore('keystore.js')
 app.keys = keyStore.get(entityUrl, {})
-
-# Set our URL that the Tent server will send users to
-# after they approve us.
-# This must be set before registering.
-app.oauthCallbackUrl = 'http://zzzzexample.com/oauthcallback'
 
 # If the app has never been registered with the server, register now
 if not app.hasRegistrationKeys():
@@ -76,7 +82,6 @@ if not app.hasPermanentKeys():
     keyStore.save(entityUrl, app.keys)
 
 #=== AUTHENTICATION END ===
-
 
 
 # Read various public things that don't require auth
