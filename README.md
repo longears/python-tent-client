@@ -42,11 +42,11 @@ pip install --update requests
 Quick Start
 -----------
 
-Look in `example.py`.  Find `rabbitwhiskers.tent.is` and replace it with your Tent entity URL.
-
 Run `example.py` and it will launch your browser, have the Tent server ask you to approve the app, and then post a hello world message.  The OAuth process is awkward when run from a command line, so read the prompt when it asks you to copy and paste things from your browser.  You only have to do this once; after that your auth details are saved in 'auth.cfg' and reused in future runs.
 
-There are some other examples at the end of `tentapp.py`.  Here's a quick overview:
+`example_dashboard.py` will get your latest posts and followings' posts and print them to the shell.
+
+Here's a quick overview:
 
 ```
 import tentapp
