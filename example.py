@@ -2,6 +2,7 @@
 
 from __future__ import division
 import pprint, time
+import webbrowser
 import tentapp
 from colors import *
 
@@ -21,19 +22,61 @@ entityUrl = 'https://pythonclienttest.tent.is'
 app = tentapp.TentApp(entityUrl)
 
 
-# Authenticate
-# You can use your own database here instead of KeyStore if you want.
-# KeyStore just saves the keys to a local JSON file.
+#=== AUTHENTICATION BEGIN ===
+# You can comment out all of this auth code if you're only
+# using publicly available API methods
+# You can also replace this whole block of auth code with this
+# single helper method:
+#     app.authorizeFromCommandLine('keystore.js')
+# but this whole block of code is provided so you can see
+# how auth works in more detail.
+
+# Load auth keys from disk if they've been previously saved
 keyStore = tentapp.KeyStore('keystore.js')
-keys = keyStore.getKey(entityUrl)
-if keys:
-    # Reuse auth keys from a previous run
-    app.authenticate(keys)
-else:
-    # Get auth keys for the first time
-    # and save them into the keyStore
-    keys = app.authenticate()
-    keyStore.addKey(entityUrl, keys)
+app.keys = keyStore.get(entityUrl, {})
+
+# Set our URL that the Tent server will send users to
+# after they approve us.
+# This must be set before registering.
+app.oauthCallbackUrl = 'http://zzzzexample.com/oauthcallback'
+
+# If the app has never been registered with the server, register now
+if not app.hasRegistrationKeys():
+    app.register()
+    keyStore.save(entityUrl, app.keys)
+
+# Ask the user to approve our app at their Tent server.
+# After that, they'll be redirected to our callback URL.
+# If they've already approved the app (and are logged in),
+# they will be instantly redirected back to our callback URL.
+if not app.hasPermanentKeys():
+    approvalURL = app.getUserApprovalURL()
+    print '-----------'
+    print
+    print 'READ THIS CAREFULLY'
+    print 'Press enter to be redirected to this URL on your tent server:'
+    print
+    print approvalURL
+    print
+    print 'Your tent server will ask you to approve the app.  After that, you'
+    print 'will be redirected to an apparently broken page at zzzzexample.com.'
+    print 'Look in your browser\'s URL bar and find the "code" parameter.  Copy and'
+    print 'paste it back into this shell.'
+    print
+    raw_input('    ... press enter to open browser ...')
+    webbrowser.open(approvalURL)
+    print
+    print 'Example:'
+    print 'http://zzzzexample.com/oauthcallback?code=15673b7718651a4dd53dc7defc88759e&state=ahyKV...'
+    print '                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^'
+    print 'Enter the code:'
+    code = raw_input('> ')
+    print '-----------'
+    app.getPermanentKeys(code)
+    keyStore.save(entityUrl, app.keys)
+
+#=== AUTHENTICATION END ===
+
 
 
 # Read various public things that don't require auth
@@ -56,7 +99,7 @@ debugJson(posts[0])
 
 
 # Post a new status message
-if app.isAuthenticated():
+if app.hasPermanentKeys():
     text = "This is a test message from python-tent-client's example.py.  The time is %s"%int(time.time())
     post = {
         'type': 'https://tent.io/types/post/status/v0.1.0',

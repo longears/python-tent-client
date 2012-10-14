@@ -18,7 +18,8 @@ testlib.begin('TentApp')
 entityUrl = 'https://pythonclienttest.tent.is'
 app = tentapp.TentApp(entityUrl)
 
-testlib.eq(    app.isAuthenticated(), False, 'when starting, should not be authenticated'   )
+testlib.eq(    app.hasRegistrationKeys(), False, 'when starting, should not have registration keys'   )
+testlib.eq(    app.hasPermanentKeys(), False, 'when starting, should not have permanent keys'   )
 
 # We use the result of getFollowers to see if we're actually authenticated or not
 # The resulting JSON objects will have a "groups" field if and only if the authentication is working.
@@ -26,31 +27,57 @@ aFollower = app.getFollowers()[0]
 testlib.eq(    'groups' in aFollower, False, 'non-authenticated GET /followers should not have "groups"'   )
 
 # Generators with no authentication
-testlib.eq(   len(list(app.generateFollowers())) >= 1, True, 'generateFollowers should return at least one item'   )
-testlib.eq(   len(list(app.generateFollowings())) >= 1, True, 'generateFollowings should return at least one item'   )
-testlib.eq(   len(list(app.generatePosts())) >= 1, True, 'generatePosts should return at least one item'   )
+try:
+    generator = app.generateFollowers()
+    firstItem = generator.next()
+    testlib.passs()
+except:
+    testlib.fail('generateFollowers should return at least one item (no auth)')
 
-# Authenticate
-# You can use your own database here instead of KeyStore if you want.
-# KeyStore just saves the keys to a local JSON file.
-keyStore = tentapp.KeyStore('keystore.js')
-if keyStore.getKey(entityUrl):
-    # Reuse auth keys from a previous run
-    app.authenticate(keyStore.getKey(entityUrl))
-else:
-    # Get auth keys for the first time
-    # and save them into the keyStore
-    keyStore.addKey(entityUrl, app.authenticate())
+try:
+    generator = app.generateFollowings()
+    firstItem = generator.next()
+    testlib.passs()
+except:
+    testlib.fail('generateFollowings should return at least one item (no auth)')
 
-testlib.eq(    app.isAuthenticated(), True, 'authenticate() should affect isAuthenticated()'   )
+try:
+    generator = app.generatePosts()
+    firstItem = generator.next()
+    testlib.passs()
+except:
+    testlib.fail('generatePosts should return at least one item (no auth)')
+
+# Authorize
+app.authorizeFromCommandLine('keystore.js')
+
+testlib.eq(    app.hasRegistrationKeys(), True, 'authenticate() should affect hasRegistrationKeys()'   )
+testlib.eq(    app.hasPermanentKeys(), True, 'authenticate() should affect hasPermanentKeys()'   )
 
 aFollower = app.getFollowers()[0]
 testlib.eq(    'groups' in aFollower, True, 'authenticated GET /followers should have "groups"'   )
 
 # Generators with authentication
-testlib.eq(   len(list(app.generateFollowers())) >= 1, True, 'generateFollowers should return at least one item'   )
-testlib.eq(   len(list(app.generateFollowings())) >= 1, True, 'generateFollowings should return at least one item'   )
-testlib.eq(   len(list(app.generatePosts())) >= 1, True, 'generatePosts should return at least one item'   )
+try:
+    generator = app.generateFollowers()
+    firstItem = generator.next()
+    testlib.passs()
+except:
+    testlib.fail('generateFollowers should return at least one item (auth)')
+
+try:
+    generator = app.generateFollowings()
+    firstItem = generator.next()
+    testlib.passs()
+except:
+    testlib.fail('generateFollowings should return at least one item (auth)')
+
+try:
+    generator = app.generatePosts()
+    firstItem = generator.next()
+    testlib.passs()
+except:
+    testlib.fail('generatePosts should return at least one item (auth)')
 
 # # Test generatePosts in a visual way
 # print
@@ -100,7 +127,6 @@ testlib.eq(   app.apiRootUrls, expectedRootUrls, '3rd party redirect via <link> 
 
 app = tentapp.TentApp('https://tent.tent.is')
 testlib.eq(   app.apiRootUrls, ['https://tent.tent.is/tent'], 'discovery should get the correct api root urls'   )
-testlib.eq(app.isAuthenticated(), False, 'when starting, should not be authenticated')
 
 profile = app.getProfile()
 testlib.eq(   type(profile), dict, 'profile should be a dict'   )

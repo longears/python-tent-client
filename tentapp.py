@@ -11,12 +11,16 @@ import hmac
 from base64 import b64encode
 import json
 import requests
-import webbrowser
 from urllib import urlencode, quote
 from urlparse import urlparse
 from colors import *
 
 requests.defaults.defaults['danger_mode'] = True
+
+class DiscoveryFailure(Exception): pass
+class RegistrationFailure(Exception): pass
+class AuthRequestFailure(Exception): pass
+class ConnectionFailure(Exception): pass
 
 #-------------------------------------------------------------------------------------
 #--- UTILS
@@ -80,7 +84,7 @@ def retry(method,*args,**kwargs):
             debugError('connection error.  retrying... (that was attempt %s of %s)'%(ii,retries))
         time.sleep(1)
     print 'tried too many times'
-    1/0 # TODO: better error handling
+    raise ConnectionFailure
 
 #-------------------------------------------------------------------------------------
 #--- CONSTANTS
@@ -100,13 +104,13 @@ class KeyStore(object):
         else:
             self.keys = {} # mapping from entityUrl to key dictionaries
 
-    def addKey(self,entityUrl,keys):
+    def save(self,entityUrl,keys):
         self.keys[entityUrl] = keys
         self._save()
 
-    def getKey(self,entityUrl):
+    def get(self,entityUrl,ifNotFound=None):
         result = self.keys.get(entityUrl,None)
-        if not result: return None
+        if result is None: return ifNotFound
         resultNoUnicode = {}
         for k,v in result.items():
             resultNoUnicode[removeUnicode(k)] = removeUnicode(v)
@@ -155,7 +159,7 @@ class TentApp(object):
 
         # details of this app
         #  basic
-        self.name = 'python-tent-client'
+        self.name = 'python-tent-client 2'
         self.description = 'description of my test app'
 
         #  urls
@@ -188,17 +192,18 @@ class TentApp(object):
         self.profile_info_types = ['all']
         self.post_types = ['all']
 
-        # auth-related things
-        #  chosen by us 
-        self.state = None
+        # keys. can contain:
+        #   appID
+        #   registration_mac_key
+        #   registration_mac_key_id
+        #   permanent_mac_key
+        #   permanent_mac_key_id
+        #   state
+        self.keys = {}
 
-        #  keys obtained from the server
-        #   At first these are set to temp values during the registration & oauth approval process.
-        #   When that completes, they are replaced with our permanent keys.
-        self.appID = None # the server assigns this to us during registration
-        self.mac_key_id = None
-        self.mac_key = None
-        self.mac_algorithm = None
+        # this controls which keys are used by the auth hook
+        # should be None, "registration", or "permanent"
+        self.keysToUse = None
 
         # prepare a session for doing requests
         # we don't have auth keys yet, so make a non-auth session.
@@ -221,26 +226,50 @@ class TentApp(object):
     #------------------------------------
     #--- misc helpers
 
-    def isAuthenticated(self):
-        return bool(  self.mac_key_id and self.mac_key and self.appID  )
+    def hasRegistrationKeys(self):
+        return bool(    'registration_mac_key' in self.keys    \
+                    and 'registration_mac_key_id' in self.keys \
+                    and 'appID' in self.keys )
+
+    def hasPermanentKeys(self):
+        return bool(    'permanent_mac_key' in self.keys \
+                    and 'permanent_mac_key_id' in self.keys )
 
     def _authHook(self,req):
         # hook up sign_request() to be called on every request
         # using the current value of self.mac_key_id and self.mac_key
-        debugAuth('auth hook. mac key id: %s'%repr(self.mac_key_id))
-        debugAuth('auth hook. mac key: %s'%repr(self.mac_key))
-        if self.isAuthenticated():
-            parsed = urlparse(req.full_url)
-            port = 80
-            if parsed.scheme == "https": port = 443
-            resource = parsed.path
-            if parsed.query: resource = parsed.path + '?' + parsed.query
-            req.headers['Authorization'] = buildHmacSha256AuthHeader(mac_key_id = self.mac_key_id,
-                                                                     mac_key = self.mac_key,
-                                                                     method = req.method,
-                                                                     resource = resource,
-                                                                     hostname = parsed.hostname,
-                                                                     port = port)
+
+        if self.keysToUse == None:
+            debugAuth('auth hook using no keys')
+            return req
+        elif self.keysToUse == 'permanent' and not self.hasPermanentKeys():
+            debugAuth('auth hook could use permanent keys but there are none')
+            return req
+        elif self.keysToUse == 'permanent':
+            debugAuth('auth hook using permanent keys')
+            mac_key = self.keys['permanent_mac_key']
+            mac_key_id = self.keys['permanent_mac_key_id']
+        elif self.keysToUse == 'registration':
+            debugAuth('auth hook using registration keys')
+            mac_key = self.keys['registration_mac_key']
+            mac_key_id = self.keys['registration_mac_key_id']
+        else:
+            1/0
+
+        debugAuth('  mac key id: %s'%repr(mac_key_id))
+        debugAuth('  mac key: %s'%repr(mac_key))
+
+        parsed = urlparse(req.full_url)
+        port = 80
+        if parsed.scheme == "https": port = 443
+        resource = parsed.path
+        if parsed.query: resource = parsed.path + '?' + parsed.query
+        req.headers['Authorization'] = buildHmacSha256AuthHeader(mac_key_id = mac_key_id,
+                                                                 mac_key = mac_key,
+                                                                 method = req.method,
+                                                                 resource = resource,
+                                                                 hostname = parsed.hostname,
+                                                                 port = port)
         return req
 
     #------------------------------------
@@ -248,8 +277,11 @@ class TentApp(object):
 
     def _discoverAPIUrls(self,entityUrl):
         """set self.apiRootUrls, return None
+        On failure, raise DiscoveryFailure
         """
-        # Get Link headers or <link> pointers and put them in this list
+        self.keysToUse = None
+
+        # Will get Link headers or <link> pointers and put them in this list
         profileUrls = []
 
         # Get self.entityUrl doing just a HEAD request so we can get Link headers
@@ -271,7 +303,7 @@ class TentApp(object):
                 links = [link.split('href="')[1].split('"')[0] for link in links]
                 profileUrls = [removeUnicode(link) for link in links]
             except IndexError:
-                1/0 # Failure to find a link.  TODO: better error handling
+                raise DiscoveryFailure() # couldn't find Link header or <link> tag
 
         # Convert relative profile urls to absolute.
         # This assumes they are relative to the entityUrl.
@@ -300,10 +332,19 @@ class TentApp(object):
     #------------------------------------
     #--- OAuth
 
-    def _register(self):
-        # get self.appID and self.mac_* from server
-        # return none
+    def register(self):
+        """Register this app with the server.  This should only be done once for a given user.
+        You can check if this has already happened by calling hasRegistrationKeys() to 
+        check if this app's .keys have registration keys already.
+
+        Preconditions for self.keys: none
+        Sets in self.keys: appID, registration_mac_*
+        On failure: raise RegistrationFailure
+        Returns: None
+        """
         debugMain('registering...')
+
+        self.keysToUse = None
 
         # describe ourself to the server
         appInfoJson = {
@@ -332,96 +373,75 @@ class TentApp(object):
         if r.json is None:
             debugError('not json.  here is the actual body text:')
             debugRaw(r.text)
-            return
-        self.appID = r.json['id'].encode('utf-8')
-        self.mac_key_id = r.json['mac_key_id'].encode('utf-8')
-        self.mac_key = r.json['mac_key'].encode('utf-8')
-        self.mac_algorithm = r.json['mac_algorithm'].encode('utf-8')
+            raise RegistrationFailure
+        self.keys['appID'] = r.json['id'].encode('utf-8')
+        self.keys['registration_mac_key_id'] = r.json['mac_key_id'].encode('utf-8')
+        self.keys['registration_mac_key'] = r.json['mac_key'].encode('utf-8')
         debugDetail('registered successfully.  details:')
-        debugDetail('  app id: %s'%repr(self.appID))
-        debugDetail('  mac key: %s'%repr(self.mac_key))
-        debugDetail('  mac key id: %s'%repr(self.mac_key_id))
-        debugDetail('  mac algorithm: %s'%repr(self.mac_algorithm))
-
-        # set up a new session that uses MAC authentication
-        # this will be used for all future requests
-        debugDetail('building auth session')
+        debugDetail('  %s'%self.keys)
 
 
-    def authenticate(self,keys=None):
-        """Register this app with the server.
-        There are two ways to use this:
-            1. provide your own keys:
-                app.authenticate(myKeys)
-            2. get new keys
-                myKeys = app.authenticate()
-        Both cases return a key dictionary.
-        In case 2, this will launch a web browser so the user can approve the app.
-        The keys that result from that procoess will be returned.
+    def getUserApprovalURL(self):
+        """Return a URL on the user's tent server that the user should visit
+        to approve this app.  After approval the user will be redirected
+        back to self.oauthCallbackUrl
 
-        A key dictionary should have the following items:
-            appId, mac_key_id, mac_key
+        Preconditions: app is registered already, aka self.hasRegistrationKeys()
+        Preconditions for self.keys: appID, registration_mac_*
+        Sets in self.keys: state
+        On failure: cannot fail
+        Returns: URL on tent server
         """
+        debugMain('getting user approval URL...')
 
-        # if we have just been handed keys, stash them in self
-        if keys:
-            self.appID = keys['appID']
-            self.mac_key_id = keys['mac_key_id']
-            self.mac_key = keys['mac_key']
-            debugMain('authenticate: ok, thanks for supplying keys')
-            return keys
+        assert self.hasRegistrationKeys()
 
-        # if we already have keys, we don't need to do anything.
-        if self.isAuthenticated():
-            debugMain('authenticate: we already have keys!  doing nothing.')
-            return
-
-        # first, register with the server to get temp keys:
-        #  self.appID and self.mac_*
-        # this also makes a new self.session which uses MAC authentication
-        self._register()
-
-        debugMain('authenticate: converting temp keys into permanent keys')
+        self.keys['state'] = randomString()
 
         # send user to the tent.is url to grant access
         # we will get the "code" in response
-        self.state = randomString()
         params = {
-            'client_id': self.appID,
+            'client_id': self.keys['appID'],
             'redirect_uri': self.oauthCallbackUrl,
-            'state': self.state,
+            'state': self.keys['state'],
             'scope': ','.join(self.scopes.keys()),
             'tent_profile_info_types': 'all',
             'tent_post_types': 'all',
         }
         if self.postNotificationUrl:
             params['tent_notification_url'] = self.postNotificationUrl
+        debugJson(params)
         requestUrl = self.apiRootUrls[0] + '/oauth/authorize'
         urlWithParams = requestUrl + '?' + urlencode(params)
 
-        print '---------------------------------------------------------\\'
-        print
-        print 'Opening web browser so you can grant access on your tent server.'
-        print
-        print 'URL: %s'%urlWithParams
-        print
-        print 'After you grant access, your browser will be redirected to'
-        print 'a nonexistant page.  Look in the url and find the "code"'
-        print 'parameter.  Paste it here:'
-        print
-        print 'Example:'
-        print 'http://zzzzexample.com/oauthcallback?code=15673b7718651a4dd53dc7defc88759e&state=ahyKV...'
-        print '                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^'
-        print
-        webbrowser.open(urlWithParams)
-        code = raw_input('> ')
-        print
-        print '---------------------------------------------------------/'
+        return urlWithParams
+
+
+    def getPermanentKeys(self,code,state=None):
+        """After the user has approved the app at their tent server, they'll be redirected
+        to self.oauthCallbackUrl with a code and state provided by the tent server.
+        Obtain those values and call this method to get permanent keys.
+        State is optional.  If you provide it, it will be checked against the state we sent
+        to the tent server in the first place.  If you omit it, that check will not be performed.
+
+        Preconditions: app is registered already, aka self.hasRegistrationKeys()
+        Preconditions for self.keys: appID, registration_mac_*, state
+        Sets in self.keys: permanent_mac_*
+        On failure: raise AuthRequestFailure
+        Returns: None
+        """
+        debugMain('trading code for permanent keys...')
+        self.keysToUse = 'registration'
+
+        assert self.hasRegistrationKeys()
+        if state and state != self.keys['state']:
+            raise AuthRequestFailure # state we got back was different than the one we sent out
 
         # trade the code for a permanent key
-        # first make the auth headers using the credentials from the registration step
-        resource = '/apps/%s/authorizations'%self.appID
+        # first make the auth headers are using the credentials from the registration step
+        resource = '/apps/%s/authorizations'%self.keys['appID']
         jsonPayload = {'code':code, 'token_type':'mac'}
+
 
         # then construct and send the request
         debugDetail()
@@ -450,17 +470,10 @@ class TentApp(object):
         debugJson(r.json)
 
         # now we have permanent keys
-        self.mac_key_id = r.json['access_token'].encode('utf-8')
-        self.mac_key = r.json['mac_key'].encode('utf-8')
-        debugDetail('final mac key id: %s'%self.mac_key_id)
-        debugDetail('final mac key: %s'%self.mac_key)
-
-        # return the keys
-        return {
-            'appID': self.appID,
-            'mac_key_id': self.mac_key_id,
-            'mac_key': self.mac_key,
-        }
+        self.keys['permanent_mac_key_id'] = r.json['access_token'].encode('utf-8')
+        self.keys['permanent_mac_key'] = r.json['mac_key'].encode('utf-8')
+        debugDetail('permanent mac key_id: %s'%self.keys['permanent_mac_key_id'])
+        debugDetail('permanent mac key: %s'%self.keys['permanent_mac_key'])
         
 
     #------------------------------------
@@ -482,6 +495,7 @@ class TentApp(object):
         """Get your own profile.
         """
         # GET /profile
+        self.keysToUse = 'permanent'
         debugMain('getProfile')
         return self._genericGet('/profile')
 
@@ -490,6 +504,7 @@ class TentApp(object):
         TODO: not implemented yet.
         """
         # PUT /profile/$profileType
+        self.keysToUse = 'permanent'
         pass
     
     def follow(self,entityUrl):
@@ -498,6 +513,7 @@ class TentApp(object):
         instead of an id.
         """
         # POST /followings
+        self.keysToUse = 'permanent'
         debugMain('follow')
 
         resource = '/followings'
@@ -536,7 +552,8 @@ class TentApp(object):
             since_id
         """
         # GET /followings  [/$id]
-        debugMain('getEntitiesIFollow')
+        self.keysToUse = 'permanent'
+        debugMain('getFollowings')
         if id is None:
             return self._genericGet('/followings',**kwargs)
         else:
@@ -547,6 +564,7 @@ class TentApp(object):
         To get the id, you should first call followings() to get a list of entities and their ids.
         """
         # DELETE /followings/$id
+        self.keysToUse = 'permanent'
         debugMain('unfollow')
         resource = '/followings/%s'%id
         requestUrl = self.apiRootUrls[0] + resource
@@ -576,6 +594,7 @@ class TentApp(object):
             before_id
             since_id
         """
+        self.keysToUse = 'permanent'
         # GET /followers  [/$id]
         debugMain('getFollowers')
         if id is None:
@@ -590,6 +609,7 @@ class TentApp(object):
         TODO: not implemented yet.
         """
         # DELETE /followers/$id
+        self.keysToUse = 'permanent'
         pass
 
     def putPost(self,post,attachments=[]):
@@ -599,6 +619,7 @@ class TentApp(object):
         TODO: Attachments are not implemented yet.
         """
         # POST /posts
+        self.keysToUse = 'permanent'
         debugMain('putPost')
 
         resource = '/posts'
@@ -645,6 +666,7 @@ class TentApp(object):
             post_types        Filter down to these posts types (comma-separated type URIs)
         """
         # GET /posts  [/$id]
+        self.keysToUse = 'permanent'
         debugMain('getPosts')
         if id is None:
             return self._genericGet('/posts',**kwargs)
@@ -656,6 +678,7 @@ class TentApp(object):
         TODO: not implemented yet.
         """
         # GET /posts/$id/attachments/$filename
+        self.keysToUse = 'permanent'
         pass
 
 
@@ -680,6 +703,7 @@ class TentApp(object):
         """Return a generator which iterates through all of the user's followers,
         newest first, making multiple GET requests behind the scenes.
         """
+        self.keysToUse = 'permanent'
         oldestTimeSoFar = None
         while True:
             if oldestTimeSoFar is None:
@@ -697,6 +721,7 @@ class TentApp(object):
         """Return a generator which iterates through all of the user's followers,
         newest first, making multiple GET requests behind the scenes.
         """
+        self.keysToUse = 'permanent'
         for f in self._genericGenerator(self.getFollowings):
             yield f
 
@@ -704,7 +729,64 @@ class TentApp(object):
         """Return a generator which iterates through all of the user's followers,
         newest first, making multiple GET requests behind the scenes.
         """
+        self.keysToUse = 'permanent'
         for f in self._genericGenerator(self.getFollowers):
             yield f
+            
+    #------------------------------------
+    #--- helpers
+
+    def authorizeFromCommandLine(self,keyStoreFilename):
+        """This is a convenience method to set up auth for a command line script
+        using a KeyStore file.  It will go through all the auth steps needed, including
+        asking the user to approve the app the first time it's run.
+        It will automatically load and save keys to the keystore.
+        To use:
+            app = TentApp('https://foo.tent.is')
+            app.commandLineAuthHelper('keystore.js')
+        """
+        # Load auth keys from disk if they've been previously saved
+        keyStore = KeyStore(keyStoreFilename)
+        self.keys = keyStore.get(self.entityUrl, {})
+
+        # Set our URL that the Tent server will send users to
+        # after they approve us.
+        # This must be set before registering.
+        self.oauthCallbackUrl = 'http://zzzzexample.com/oauthcallback'
+
+        # If the app has never been registered with the server, register now
+        if not self.hasRegistrationKeys():
+            self.register()
+            keyStore.save(self.entityUrl, self.keys)
+
+        # Ask the user to approve our app at their Tent server.
+        # After that, they'll be redirected to our callback URL.
+        # If they've already approved the app (and are logged in),
+        # they will be instantly redirected back to our callback URL.
+        if not self.hasPermanentKeys():
+            approvalURL = self.getUserApprovalURL()
+            print '-----------'
+            print
+            print 'READ THIS CAREFULLY'
+            print 'Press enter to be redirected to this URL on your tent server:'
+            print
+            print approvalURL
+            print
+            print 'Your tent server will ask you to approve the app.  After that, you'
+            print 'will be redirected to an apparently broken page at zzzzexample.com.'
+            print 'Look in your browser\'s URL bar and find the "code" parameter.  Copy and'
+            print 'paste it back into this shell.'
+            print
+            raw_input('    ... press enter to open browser ...')
+            webbrowser.open(approvalURL)
+            print
+            print 'Example:'
+            print 'http://zzzzexample.com/oauthcallback?code=15673b7718651a4dd53dc7defc88759e&state=ahyKV...'
+            print '                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^'
+            print 'Enter the code:'
+            code = raw_input('> ')
+            print '-----------'
+            self.getPermanentKeys(code)
+            keyStore.save(self.entityUrl, self.keys)
 
 

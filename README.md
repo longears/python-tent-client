@@ -58,25 +58,12 @@ tentapp.debug = False  # Turn this on if you want to see verbose debugging info 
 entityUrl = 'https://pythonclienttest.tent.is'
 app = tentapp.TentApp(entityUrl)
 
-
-# Authenticate
-# You can use your own database here instead of KeyStore if you want.
-# KeyStore just saves the keys to a local JSON file.
-keyStore = tentapp.KeyStore('keystore.js')
-keys = keyStore.getKey(entityUrl)
-if keys:
-    # Reuse auth keys from a previous run
-    app.authenticate(keys)
-else:
-    # Get auth keys for the first time
-    # and save them into the keyStore
-    keys = app.authenticate()
-    keyStore.addKey(entityUrl, keys)
-
-
 # Get your profile info as a JSON-style Python dictionary
 print app.getProfile()
 
+# Send the user to their tent server to approve this app
+# and save the resulting keys in a local file
+app.authorizeFromCommandLine('keystore.js')
 
 # Post a new post.  For now you need to supply the JSON dictionary yourself.
 app.putPost(yourPostJsonHere)

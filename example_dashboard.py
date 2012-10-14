@@ -15,19 +15,7 @@ print
 
 entityUrl = 'https://pythonclienttest.tent.is'
 app = tentapp.TentApp(entityUrl)
-
-
-# Authenticate
-keyStore = tentapp.KeyStore('keystore.js')
-keys = keyStore.getKey(entityUrl)
-if keys:
-    # Reuse auth keys from a previous run
-    app.authenticate(keys)
-else:
-    # Get auth keys for the first time
-    # and save them into the keyStore
-    keys = app.authenticate()
-    keyStore.addKey(entityUrl, keys)
+app.authorizeFromCommandLine('keystore.js')
 
 
 # Because we've authenticated, getPosts() will get not only our own public posts
@@ -35,7 +23,8 @@ else:
 # tent.is limits this to the last 50 posts or so unless additional parameters are present
 posts = app.getPosts()
 
-# # if you wanted to sort oldest first:
+# # By default posts are sorted newest first.
+# # If you wanted to sort oldest first:
 # posts.sort(key = lambda p: p['published_at'])
 
 for post in posts:
