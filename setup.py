@@ -9,6 +9,7 @@ setup(
     name='tentapp',
     version=version,
     packages=['tentapp'],
+    requires=['requests'],
     install_requires=['requests'],
 
     author='David Wallace',
