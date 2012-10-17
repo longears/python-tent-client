@@ -1,6 +1,5 @@
 
 bin/*
-dist/*
 include/*
 lib/*
 local/*
@@ -11,6 +10,8 @@ local/*
 *.swp
 .DS_Store
 
+dist/*
+build/*
 MANIFEST
 
 
