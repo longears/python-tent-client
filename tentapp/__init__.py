@@ -6,7 +6,7 @@ try:
 except ImportError:
     print >>sys.stderr, 'The tentapp library requires that you have the "requests" library installed.  Run "pip install requests".'
 
-__version__ = '0.1.0dev1'
+__version__ = '0.1.0dev2'
 
 from tentapp import (
     TentApp,

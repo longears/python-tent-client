@@ -4,6 +4,7 @@ include/*
 lib/*
 local/*
 .Python
+*.egg-info/
 
 *.pyc
 *.pyo
