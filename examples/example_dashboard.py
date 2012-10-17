@@ -7,7 +7,7 @@
 from __future__ import division
 import pprint, time
 import tentapp
-from colors import *
+from tentapp.colors import *
 
 print yellow('-----------------------------------------------------------------------\\')
 print

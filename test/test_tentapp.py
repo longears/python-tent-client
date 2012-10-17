@@ -2,7 +2,7 @@
 
 from __future__ import division
 import pprint, time, sys, json
-from colors import *
+from tentapp.colors import *
 import testlib
 
 import tentapp
@@ -86,6 +86,16 @@ except:
 # # for post in app.generatePosts(entity='https://tent.tent.is'):
 #     timestamp = time.asctime(time.localtime(  post['published_at']  ))
 #     print cyan('%s  %s %s'%(post['id'],timestamp,post['entity']))
+
+
+
+
+
+sys.exit(0)
+
+
+
+
 
 # post a status and then get it back
 text = "This is a test message from python-tent-client's test_tentapp.py.  The time is %s"%int(time.time())

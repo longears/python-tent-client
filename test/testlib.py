@@ -3,7 +3,7 @@
 from __future__ import division
 import sys
 
-from colors import *
+from tentapp.colors import *
 
 NPASS = 0
 NFAIL = 0

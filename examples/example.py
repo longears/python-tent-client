@@ -4,7 +4,7 @@ from __future__ import division
 import pprint, time
 import webbrowser
 import tentapp
-from colors import *
+from tentapp.colors import *
 
 def debugJson(s=''): print magenta(pprint.pformat(s))
 

@@ -3,10 +3,11 @@ bin/*
 include/*
 lib/*
 local/*
+.Python
 
 *.pyc
+*.pyo
 *.swp
 .DS_Store
 
-auth.cfg
 

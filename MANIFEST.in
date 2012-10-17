@@ -1,0 +1,8 @@
+
+include *.txt
+include *.md
+include *.js
+recursive-include examples *.py *.js
+recursive-include test *.py
+
+
