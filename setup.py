@@ -3,13 +3,12 @@ try:
 except ImportError:
     from distutils.core import setup
 
-from tentapp import __version__ as version
+version = '0.1.0dev7'  # Make sure to update tentapp/__init__.py also
 
 setup(
     name='tentapp',
     version=version,
     packages=['tentapp'],
-    requires=['requests'],
     install_requires=['requests'],
 
     author='David Wallace',
