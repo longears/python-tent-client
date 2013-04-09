@@ -3,6 +3,8 @@ python-tent-client
 
 A command-line client for talking to [Tent](http://tent.io/) servers such as [tent.is](https://tent.is/).
 
+This only speaks Tent protocol v0.1.
+
 Current Status
 --------------
 
